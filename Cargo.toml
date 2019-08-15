@@ -1,5 +1,5 @@
 [package]
-name = "mind-builder"
+name = "Bits"
 version = "0.1.0"
 authors = ["Alexandre Chêne <kooparse@protonmail.com>"]
 edition = "2018"

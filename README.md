@@ -1,4 +1,4 @@
-# Game
+# Bits
 
 ## Install
 
