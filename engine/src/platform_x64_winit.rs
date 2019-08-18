@@ -3,7 +3,7 @@
 ///
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
-use crate::window::{DpiFactor, Window, WindowDimension, WindowWrapper};
+use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
 use gl;
 use glutin::{
     dpi, ContextBuilder, ContextWrapper, Event, EventsLoop, PossiblyCurrent,
@@ -12,13 +12,13 @@ use glutin::{
 use std::convert::From;
 
 /// Get the winit window object by context.window();
-pub struct WinitWindow {
+pub struct WinitPlatform {
     should_close: bool,
     event_loop: EventsLoop,
     context: ContextWrapper<PossiblyCurrent, GlutinWindow>,
 }
 
-impl WinitWindow {
+impl WinitPlatform {
     pub fn new(
         title: &str,
         (width, height): (u32, u32),
@@ -61,12 +61,12 @@ impl WinitWindow {
     }
 }
 
-impl WindowWrapper for WinitWindow {
-    fn get_dimension(&self) -> WindowDimension {
+impl PlatformWrapper for WinitPlatform {
+    fn get_dimension(&self) -> GameResolution {
         let window = self.context.window();
         let inner_size = window.get_inner_size().unwrap();
 
-        WindowDimension {
+        GameResolution {
             width: inner_size.width,
             height: inner_size.height,
         }
@@ -105,8 +105,8 @@ impl WindowWrapper for WinitWindow {
     }
 }
 
-impl From<WinitWindow> for Window {
-    fn from(window: WinitWindow) -> Self {
+impl From<WinitPlatform> for Platform {
+    fn from(window: WinitPlatform) -> Self {
         Self {
             inner_value: Box::new(window),
         }

@@ -1,14 +1,33 @@
-use crate::window::Window;
+pub type DpiFactor = f64;
 
-// Platform store the window
+pub struct GameResolution {
+    pub width: f64,
+    pub height: f64,
+}
+
+// Platform store an object trait (window mostly).
 // and different context associated with it.
 pub struct Platform {
-    pub window: Window,
+    pub inner_value: Box<dyn PlatformWrapper>,
+}
+
+/// Generic layer for custom platforms.
+pub trait PlatformWrapper {
+    fn get_dimension(&self) -> GameResolution;
+    fn get_dpi_factor(&self) -> DpiFactor;
+    fn should_close(&self) -> bool;
+    fn swap_buffers(&self);
+    fn poll_events(&mut self);
 }
 
 impl Platform {
-    pub fn new(window: Window) -> Self {
-        Self { window }
+    /// Get ref of the inner platform.
+    pub fn get(&self) -> &dyn PlatformWrapper {
+        &*self.inner_value
+    }
+    /// Get mutable ref of the inner platform.
+    pub fn get_mut(&mut self) -> &mut dyn PlatformWrapper {
+        &mut *self.inner_value
     }
 }
 

@@ -10,16 +10,19 @@ use crate::constants::{
     target_os = "windows",
     target_os = "linux"
 ))]
-use engine::window_x64_winit as window_x64;
-use engine::{game_loop, platform, window::Window};
+use engine::platform_x64_winit as platform_x64;
+use engine::{
+    game_loop,
+    platform::{self, Platform},
+};
 
 fn main() {
     // Panic if platform not supported otherwise
     // log the current system and arch.
     platform::check_platform_supported();
-    // Right now, we're using only winit for all desktop operating system.
-    let inner_window = if platform::is_desktop() {
-        window_x64::WinitWindow::new(
+    // Right now, we're using only glutin/winit for all desktop operating system.
+    let platform_wrapper = if platform::is_desktop() {
+        platform_x64::WinitPlatform::new(
             GAME_NAME,
             (DEFAULT_WIDTH, DEFAULT_HEIGHT),
             WITH_VSYNC,
@@ -29,9 +32,12 @@ fn main() {
         panic!("Only desktop platforms is currently supported");
     };
 
-    let mut platform = platform::Platform::new(Window::from(inner_window));
+    let mut platform = Platform::from(platform_wrapper);
     let mut game_loop = game_loop::GameLoop::new();
-    let window = platform.window.get_mut();
+
+    // Get mutable ref of the inner platform,
+    // we got an "PlatformWrapper" trait object.
+    let window = platform.get_mut();
 
     game_loop.start(|_time, fps| {
         dbg!(fps);
