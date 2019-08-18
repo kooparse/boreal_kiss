@@ -21,6 +21,9 @@ pub trait PlatformWrapper {
 }
 
 impl Platform {
+    pub fn new(inner_value: Box<dyn PlatformWrapper>) -> Self {
+        Self { inner_value }
+    }
     /// Get ref of the inner platform.
     pub fn get(&self) -> &dyn PlatformWrapper {
         &*self.inner_value

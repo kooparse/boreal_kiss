@@ -107,8 +107,6 @@ impl PlatformWrapper for WinitPlatform {
 
 impl From<WinitPlatform> for Platform {
     fn from(window: WinitPlatform) -> Self {
-        Self {
-            inner_value: Box::new(window),
-        }
+        Self::new(Box::new(window))
     }
 }
