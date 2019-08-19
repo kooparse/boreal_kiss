@@ -1,3 +1,5 @@
+use crate::renderer::{Renderer, RendererOptions};
+
 pub type DpiFactor = f64;
 
 pub struct GameResolution {
@@ -18,6 +20,7 @@ pub trait PlatformWrapper {
     fn should_close(&self) -> bool;
     fn swap_buffers(&self);
     fn poll_events(&mut self);
+    fn load_opengl(&self) -> RendererOptions;
 }
 
 impl Platform {
@@ -31,6 +34,13 @@ impl Platform {
     /// Get mutable ref of the inner platform.
     pub fn get_mut(&mut self) -> &mut dyn PlatformWrapper {
         &mut *self.inner_value
+    }
+}
+
+impl<'p> From<&'p Platform> for Renderer<'p> {
+    fn from(platform: &'p Platform) -> Self {
+        let options = platform.get().load_opengl();
+        Self::new(&platform, options)
     }
 }
 

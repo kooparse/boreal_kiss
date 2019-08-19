@@ -14,6 +14,7 @@ use engine::platform_x64_winit as platform_x64;
 use engine::{
     game_loop,
     platform::{self, Platform},
+    renderer::Renderer,
 };
 
 fn main() {
@@ -33,6 +34,8 @@ fn main() {
     };
 
     let mut platform = Platform::from(platform_wrapper);
+    let _renderer = Renderer::from(&platform);
+
     let mut game_loop = game_loop::GameLoop::new();
 
     // Get mutable ref of the inner platform,

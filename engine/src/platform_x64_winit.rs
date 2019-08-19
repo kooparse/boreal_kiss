@@ -4,6 +4,7 @@
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
 use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
+use crate::renderer::RendererOptions;
 use gl;
 use glutin::{
     dpi, ContextBuilder, ContextWrapper, Event, EventsLoop, PossiblyCurrent,
@@ -43,16 +44,6 @@ impl WinitPlatform {
 
         let context = unsafe { context.make_current().unwrap() };
 
-        // TODO: Put this block into the renderer.
-        unsafe {
-            gl::load_with(|symbol| {
-                context.get_proc_address(symbol) as *const _
-            });
-
-            gl::Enable(gl::MULTISAMPLE);
-            gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-        }
-
         Self {
             should_close: false,
             context,
@@ -84,6 +75,19 @@ impl PlatformWrapper for WinitPlatform {
 
     fn should_close(&self) -> bool {
         self.should_close
+    }
+
+    fn load_opengl(&self) -> RendererOptions {
+        let pixel_format = self.context.get_pixel_format();
+
+        gl::load_with(|symbol| {
+            self.context.get_proc_address(symbol) as *const _
+        });
+
+        RendererOptions::new(
+            pixel_format.multisampling.is_some(),
+            (0., 0., 0., 0.),
+        )
     }
 
     fn poll_events(&mut self) {
