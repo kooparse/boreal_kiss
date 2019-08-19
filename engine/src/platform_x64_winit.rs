@@ -1,4 +1,4 @@
-/// Platform with 64 bite instruction set, using Winit for window creation.
+/// Platform with 64 bits instruction set, using Winit for window creation.
 /// Windows, macOS and Linux are supported thanks to winit crate.
 ///
 /// We are using this crate for now, even if we don't have a total control
@@ -73,8 +73,7 @@ impl PlatformWrapper for WinitPlatform {
     }
 
     fn get_dpi_factor(&self) -> DpiFactor {
-        let dpi_factor = self.context.window().get_hidpi_factor();
-        dpi_factor
+        self.context.window().get_hidpi_factor()
     }
 
     fn swap_buffers(&self) {
