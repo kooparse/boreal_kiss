@@ -49,8 +49,6 @@ pub fn check_platform_supported() {
         "macOS"
     } else if cfg!(target_os = "windows") {
         "Windows"
-    } else if cfg!(target_os = "linux") {
-        "Linux"
     } else {
         panic!("Target system not currently supported");
     };
@@ -61,12 +59,9 @@ pub fn check_platform_supported() {
         panic!("Architecture not currently supported")
     };
 
-    dbg!(target_os);
-    dbg!(target_arch);
+    dbg!(target_os, target_arch);
 }
 
 pub fn is_desktop() -> bool {
-    cfg!(target_os = "macos")
-        || cfg!(target_os = "windows")
-        || cfg!(target_os = "linux")
+    cfg!(target_os = "macos") || cfg!(target_os = "windows")
 }

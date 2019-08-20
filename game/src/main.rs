@@ -5,11 +5,7 @@ use crate::constants::{
 };
 // #[cfg(target_os = "xbox_one")]
 // use engine::window_xbox as window_x64;
-#[cfg(any(
-    target_os = "macos",
-    target_os = "windows",
-    target_os = "linux"
-))]
+#[cfg(any(target_os = "macos", target_os = "windows",))]
 use engine::platform_x64_winit as platform_x64;
 use engine::{
     game_loop,
@@ -42,8 +38,7 @@ fn main() {
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
 
-    game_loop.start(|_time, fps| {
-        dbg!(fps);
+    game_loop.start(|_time, _fps| {
 
         window.poll_events();
         window.swap_buffers();

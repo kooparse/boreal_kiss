@@ -1,5 +1,5 @@
-pub mod renderer;
 pub mod game_loop;
 pub mod platform;
 pub mod platform_x64_winit;
+pub mod renderer;
 pub mod time;

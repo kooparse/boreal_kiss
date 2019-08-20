@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 gl = "0.13.0"
-glutin = "0.21"
 serde = "1.0.98"
 nalgebra-glm = "0.3"
+
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+glutin = "0.21"
