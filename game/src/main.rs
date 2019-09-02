@@ -5,13 +5,13 @@ use crate::constants::{
 };
 // #[cfg(target_os = "xbox_one")]
 // use engine::window_xbox as window_x64;
-#[cfg(any(target_os = "macos", target_os = "windows",))]
-use engine::platform_x64_winit as platform_x64;
 use engine::{
-    game_loop,
+    game_loop::GameLoop,
     platform::{self, Platform},
-    renderer::Renderer,
+    platform_x64_winit as platform_x64,
 };
+use renderer::{primitives, Renderer};
+#[cfg(any(target_os = "macos", target_os = "windows",))]
 
 fn main() {
     // Panic if platform not supported otherwise
@@ -30,19 +30,31 @@ fn main() {
     };
 
     let mut platform = Platform::from(platform_wrapper);
-    let _renderer = Renderer::from(&platform);
+    let mut renderer = Renderer::from(&platform);
 
-    let mut game_loop = game_loop::GameLoop::new();
+    renderer.push(vec![
+        primitives::create_triangle_object(
+            "game/assets/textures/grid_debug.png",
+            0.2,
+        ),
+        primitives::create_triangle_object(
+            "game/assets/textures/pos_debug.png",
+            0.7,
+        ),
+    ]);
+
+    let mut game_loop = GameLoop::new();
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
 
     game_loop.start(|_time, _fps| {
-
         window.poll_events();
-        window.swap_buffers();
 
+        renderer.draw();
+
+        window.swap_buffers();
         window.should_close()
     });
 

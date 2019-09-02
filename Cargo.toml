@@ -6,9 +6,10 @@ edition = "2018"
 
 [dependencies]
 engine = { path = "engine" }
+renderer = { path = "renderer" }
 
 [workspace]
-members = ["engine"]
+members = ["engine", "renderer"]
 
 [[bin]]
 name = "game"

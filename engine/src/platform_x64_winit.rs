@@ -4,15 +4,19 @@
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
 use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
-use crate::renderer::RendererOptions;
+use renderer::{Color, RendererOptions};
 use gl;
 use glutin::{
-    dpi, ContextBuilder, ContextWrapper, Event, EventsLoop, PossiblyCurrent,
-    Window as GlutinWindow, WindowBuilder, WindowEvent,
+    dpi, Api, ContextBuilder, ContextWrapper, Event, EventsLoop, GlRequest,
+    PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow, WindowBuilder,
+    WindowEvent,
 };
 use std::convert::From;
 
-/// Get the winit window object by context.window();
+/// Construct a window for all desktop with the
+/// opengl v4.1 loaded in the context. The 4.1 version is
+/// the latest opengl version available for the currently latest
+/// macOS version.
 pub struct WinitPlatform {
     should_close: bool,
     event_loop: EventsLoop,
@@ -37,6 +41,7 @@ impl WinitPlatform {
         let event_loop = EventsLoop::new();
 
         let context = ContextBuilder::new()
+            .with_gl(GlRequest::Specific(Api::OpenGl, (4, 1)))
             .with_vsync(with_vsync)
             .with_multisampling(multisampling)
             .build_windowed(builder, &event_loop)
@@ -86,7 +91,7 @@ impl PlatformWrapper for WinitPlatform {
 
         RendererOptions::new(
             pixel_format.multisampling.is_some(),
-            (0., 0., 0., 0.),
+            Color(0., 0., 0., 0.),
         )
     }
 
@@ -98,6 +103,11 @@ impl PlatformWrapper for WinitPlatform {
                 Event::WindowEvent { event, .. } => match event {
                     WindowEvent::CloseRequested => {
                         should_close = true;
+                    }
+                    WindowEvent::KeyboardInput { input, .. } => {
+                        if let Some(keycode) = input.virtual_keycode {
+                            should_close = keycode == VirtualKeyCode::Escape;
+                        }
                     }
                     _ => (),
                 },

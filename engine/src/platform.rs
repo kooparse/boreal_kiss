@@ -1,4 +1,4 @@
-use crate::renderer::{Renderer, RendererOptions};
+use renderer::{Renderer, RendererOptions};
 
 pub type DpiFactor = f64;
 
@@ -37,10 +37,10 @@ impl Platform {
     }
 }
 
-impl<'p> From<&'p Platform> for Renderer<'p> {
+impl<'p, 't> From<&'p Platform> for Renderer {
     fn from(platform: &'p Platform) -> Self {
         let options = platform.get().load_opengl();
-        Self::new(&platform, options)
+        Self::new(options)
     }
 }
 
