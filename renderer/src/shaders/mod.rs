@@ -45,6 +45,23 @@ impl Drop for ShaderManager {
     }
 }
 
+pub fn set_matrix4(
+    shader_id: ShaderProgramId,
+    var_name: &str,
+    transform: &[f32],
+) {
+    let shader_variable = get_location(shader_id, var_name);
+    unsafe {
+        gl::UniformMatrix4fv(shader_variable, 1, gl::FALSE, transform.as_ptr());
+    }
+}
+
+fn get_location(shader_id: ShaderProgramId, var_name: &str) -> i32 {
+    let var_name = CString::new(var_name)
+        .expect("Crash while converting Rust str to C string");
+    unsafe { gl::GetUniformLocation(shader_id, var_name.as_ptr()) }
+}
+
 pub fn create_shader_program(
     vertex_source: &str,
     fragment_source: &str,

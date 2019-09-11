@@ -4,13 +4,13 @@
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
 use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
-use renderer::{Color, RendererOptions};
 use gl;
 use glutin::{
     dpi, Api, ContextBuilder, ContextWrapper, Event, EventsLoop, GlRequest,
     PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow, WindowBuilder,
     WindowEvent,
 };
+use renderer::{Color, RendererOptions};
 use std::convert::From;
 
 /// Construct a window for all desktop with the
@@ -83,6 +83,7 @@ impl PlatformWrapper for WinitPlatform {
     }
 
     fn load_opengl(&self) -> RendererOptions {
+        let dim = self.get_dimension();
         let pixel_format = self.context.get_pixel_format();
 
         gl::load_with(|symbol| {
@@ -92,6 +93,7 @@ impl PlatformWrapper for WinitPlatform {
         RendererOptions::new(
             pixel_format.multisampling.is_some(),
             Color(0., 0., 0., 0.),
+            (dim.width, dim.height)
         )
     }
 

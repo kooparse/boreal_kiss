@@ -4,9 +4,9 @@ pub mod primitives;
 mod shaders;
 mod texture;
 
+use nalgebra_glm as glm;
 use object::RendererObject;
-use shaders::ShaderManager;
-use shaders::ShaderType;
+use shaders::{ShaderManager, ShaderType};
 use std::collections::HashMap;
 use std::ptr;
 
@@ -15,18 +15,28 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 
 /// Define RGBA color.
 /// (Sometime, tuple structs are not very elegent).
+#[derive(Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
+pub type RendererDimension = (f64, f64);
+
+#[derive(Default)]
 pub struct RendererOptions {
+    dimension: RendererDimension,
     with_multisampling: bool,
     default_color: Color,
 }
 
 impl RendererOptions {
-    pub fn new(with_multisampling: bool, default_color: Color) -> Self {
+    pub fn new(
+        with_multisampling: bool,
+        default_color: Color,
+        dimension: RendererDimension,
+    ) -> Self {
         Self {
             with_multisampling,
             default_color,
+            dimension,
         }
     }
 }
@@ -60,6 +70,7 @@ pub struct Renderer {
     object_pool: ObjectPool,
     render_group: HashMap<ShaderType, Vec<LoadedObjectId>>,
     shader_manager: ShaderManager,
+    projection: glm::Mat4,
 }
 
 impl Renderer {
@@ -82,8 +93,15 @@ impl Renderer {
             render_group.insert(key.clone(), vec![]);
         }
 
+        let projection = glm::perspective(
+            (options.dimension.0 / options.dimension.1) as f32,
+            45.0,
+            0.1,
+            100.0,
+        );
         Self {
             options,
+            projection,
             object_pool: ObjectPool(HashMap::new()),
             shader_manager,
             render_group,
@@ -142,6 +160,21 @@ impl Renderer {
             let program = &self.shader_manager.list[&shader_type];
             opengl::use_shader_program(program.program_id);
             opengl::use_vao(program.vao);
+
+            let mut model = glm::Mat4::identity();
+            let mut view = glm::Mat4::identity();
+
+            model = glm::rotate(&model, -55.0, &glm::vec3(1.0, 0.0, 0.0));
+            view = glm::translate(&view, &glm::vec3(0.0, 0.0, -3.0));
+            shaders::set_matrix4(program.program_id, "model", model.as_slice());
+            shaders::set_matrix4(program.program_id, "view", view.as_slice());
+
+            // TODO: Don't set projection matrix in the render loop.
+            shaders::set_matrix4(
+                program.program_id,
+                "projection",
+                self.projection.as_slice(),
+            );
 
             ids.iter().for_each(|id| unsafe {
                 if let Some(obj) = self.object_pool.0.get(id) {

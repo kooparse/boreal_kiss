@@ -32,16 +32,10 @@ fn main() {
     let mut platform = Platform::from(platform_wrapper);
     let mut renderer = Renderer::from(&platform);
 
-    renderer.push(vec![
-        primitives::create_triangle_object(
-            "game/assets/textures/grid_debug.png",
-            0.2,
-        ),
-        primitives::create_triangle_object(
-            "game/assets/textures/pos_debug.png",
-            0.7,
-        ),
-    ]);
+    renderer.push(vec![primitives::create_triangle_object(
+        "game/assets/textures/pos_debug.png",
+        0.8,
+    )]);
 
     let mut game_loop = GameLoop::new();
 
