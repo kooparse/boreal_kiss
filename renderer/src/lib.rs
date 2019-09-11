@@ -164,7 +164,7 @@ impl Renderer {
             let mut model = glm::Mat4::identity();
             let mut view = glm::Mat4::identity();
 
-            model = glm::rotate(&model, -55.0, &glm::vec3(1.0, 0.0, 0.0));
+            model = glm::rotate(&model, -45.0, &glm::vec3(1.0, 0.0, 0.0));
             view = glm::translate(&view, &glm::vec3(0.0, 0.0, -3.0));
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
             shaders::set_matrix4(program.program_id, "view", view.as_slice());
