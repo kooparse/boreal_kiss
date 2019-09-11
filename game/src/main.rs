@@ -29,6 +29,7 @@ fn main() {
         panic!("Only desktop platforms is currently supported");
     };
 
+    let mut game_loop = GameLoop::new();
     let mut platform = Platform::from(platform_wrapper);
     let mut renderer = Renderer::from(&platform);
 
@@ -37,8 +38,6 @@ fn main() {
         0.8,
     )]);
 
-    let mut game_loop = GameLoop::new();
-
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
@@ -46,6 +45,7 @@ fn main() {
     game_loop.start(|_time, _fps| {
         window.poll_events();
 
+        renderer.clear_screen();
         renderer.draw();
 
         window.swap_buffers();

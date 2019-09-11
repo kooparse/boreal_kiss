@@ -204,7 +204,7 @@ impl Renderer {
         }
 
         // TODO: Used only for debugging...
-        self.clear_all();
+        // self.remove_all();
     }
 
     // TODO: This do not remove ids in the render group.
@@ -214,17 +214,21 @@ impl Renderer {
 
     /// The method shrink_to_fit will frees any allocated
     /// memory that is not used.
-    pub fn clear_all(&mut self) {
+    pub fn remove_all(&mut self) {
         self.render_group.clear();
         self.render_group.shrink_to_fit();
 
         self.object_pool.0.clear();
         self.object_pool.0.shrink_to_fit();
     }
+
+    pub fn clear_screen(&self) {
+        opengl::clear_color(&self.options.default_color);
+    }
 }
 
 impl Drop for Renderer {
     fn drop(&mut self) {
-        self.clear_all();
+        self.remove_all();
     }
 }

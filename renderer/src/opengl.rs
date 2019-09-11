@@ -41,6 +41,7 @@ pub fn set_multisampling(enabled: bool) {
 pub fn clear_color(color: &Color) {
     unsafe {
         gl::ClearColor(color.0, color.1, color.2, color.3);
+        gl::Clear(gl::COLOR_BUFFER_BIT);
     }
 }
 
