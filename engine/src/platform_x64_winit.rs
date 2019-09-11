@@ -92,6 +92,7 @@ impl PlatformWrapper for WinitPlatform {
 
         RendererOptions::new(
             pixel_format.multisampling.is_some(),
+            true,
             Color(0.1, 0.1, 0.2, 1.0),
             (dim.width, dim.height)
         )

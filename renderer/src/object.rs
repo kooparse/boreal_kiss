@@ -1,11 +1,13 @@
 use super::shaders::ShaderType;
 use super::texture::{Texture, UV};
+use nalgebra_glm as glm;
 
 pub struct RendererObject<'a> {
     pub vertices: Vertices,
     pub texture: Option<Texture<'a>>,
     pub shader_type: ShaderType,
     pub gpu_loaded: bool,
+    pub position: glm::TVec3<f32>,
 }
 
 impl<'a> RendererObject<'a> {

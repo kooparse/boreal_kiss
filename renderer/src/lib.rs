@@ -24,17 +24,20 @@ pub type RendererDimension = (f64, f64);
 pub struct RendererOptions {
     dimension: RendererDimension,
     with_multisampling: bool,
+    with_depth_testing: bool,
     default_color: Color,
 }
 
 impl RendererOptions {
     pub fn new(
         with_multisampling: bool,
+        with_depth_testing: bool,
         default_color: Color,
         dimension: RendererDimension,
     ) -> Self {
         Self {
             with_multisampling,
+            with_depth_testing,
             default_color,
             dimension,
         }
@@ -51,8 +54,7 @@ struct GpuBound {
 }
 
 struct LoadedObject {
-    #[allow(dead_code)]
-    position: (f32, f32, f32),
+    position: glm::TVec3<f32>,
     gpu_bound: GpuBound,
 }
 
@@ -81,7 +83,8 @@ impl Renderer {
         opengl::get_opengl_loaded();
 
         opengl::set_multisampling(options.with_multisampling);
-        opengl::clear_color(&options.default_color);
+        opengl::set_depth_testing(options.with_depth_testing);
+        opengl::clear(&options.default_color);
 
         // Compile all shaders and create corresponding vao.
         let shader_manager = ShaderManager::new();
@@ -141,7 +144,7 @@ impl Renderer {
                 };
 
                 let loaded_obj = LoadedObject {
-                    position: (0.0, 0.0, 0.0),
+                    position: object.position,
                     gpu_bound,
                 };
 
@@ -166,7 +169,6 @@ impl Renderer {
 
             model = glm::rotate(&model, -45.0, &glm::vec3(1.0, 0.0, 0.0));
             view = glm::translate(&view, &glm::vec3(0.0, 0.0, -3.0));
-            shaders::set_matrix4(program.program_id, "model", model.as_slice());
             shaders::set_matrix4(program.program_id, "view", view.as_slice());
 
             // TODO: Don't set projection matrix in the render loop.
@@ -179,6 +181,13 @@ impl Renderer {
             ids.iter().for_each(|id| unsafe {
                 if let Some(obj) = self.object_pool.0.get(id) {
                     let gpu_bound = &obj.gpu_bound;
+
+                    model = glm::translate(&model, &obj.position);
+                    shaders::set_matrix4(
+                        program.program_id,
+                        "model",
+                        model.as_slice(),
+                    );
 
                     if let Some(texture) = gpu_bound.texture_id {
                         gl::BindTexture(gl::TEXTURE_2D, texture);
@@ -223,7 +232,7 @@ impl Renderer {
     }
 
     pub fn clear_screen(&self) {
-        opengl::clear_color(&self.options.default_color);
+        opengl::clear(&self.options.default_color);
     }
 }
 

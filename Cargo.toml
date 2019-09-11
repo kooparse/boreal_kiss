@@ -5,6 +5,7 @@ authors = ["Alexandre Chêne <kooparse@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
+nalgebra-glm = "0.4.2"
 engine = { path = "engine" }
 renderer = { path = "renderer" }
 
@@ -14,4 +15,3 @@ members = ["engine", "renderer"]
 [[bin]]
 name = "game"
 path = "game/src/main.rs"
-

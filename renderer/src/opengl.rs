@@ -37,11 +37,20 @@ pub fn set_multisampling(enabled: bool) {
         }
     }
 }
+/// Set depth testing.
+pub fn set_depth_testing(enabled: bool) {
+    unsafe {
+        match enabled {
+            true => gl::Enable(gl::DEPTH_TEST),
+            false => gl::Disable(gl::DEPTH_TEST),
+        }
+    }
+}
 
-pub fn clear_color(color: &Color) {
+pub fn clear(color: &Color) {
     unsafe {
         gl::ClearColor(color.0, color.1, color.2, color.3);
-        gl::Clear(gl::COLOR_BUFFER_BIT);
+        gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
 }
 

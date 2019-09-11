@@ -10,6 +10,7 @@ use engine::{
     platform::{self, Platform},
     platform_x64_winit as platform_x64,
 };
+use nalgebra_glm as glm;
 use renderer::{primitives, Renderer};
 #[cfg(any(target_os = "macos", target_os = "windows",))]
 
@@ -33,10 +34,18 @@ fn main() {
     let mut platform = Platform::from(platform_wrapper);
     let mut renderer = Renderer::from(&platform);
 
-    renderer.push(vec![primitives::create_triangle_object(
-        "game/assets/textures/pos_debug.png",
-        0.8,
-    )]);
+    renderer.push(vec![
+        primitives::create_triangle_object(
+            "game/assets/textures/grid_debug.png",
+            glm::vec3(0., 0.0, 0.0),
+            0.8,
+        ),
+        primitives::create_triangle_object(
+            "game/assets/textures/pos_debug.png",
+            glm::vec3(0., 5.0, -1.0),
+            0.8,
+        ),
+    ]);
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
