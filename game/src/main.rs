@@ -36,14 +36,14 @@ fn main() {
 
     renderer.push(vec![
         primitives::create_triangle_object(
-            "game/assets/textures/grid_debug.png",
-            glm::vec3(0., 0.0, 0.0),
-            0.8,
+            "game/assets/textures/pos_debug.png",
+            glm::vec3(1., 0.0, 0.0),
+            1.0,
         ),
         primitives::create_triangle_object(
-            "game/assets/textures/pos_debug.png",
-            glm::vec3(0., 5.0, -1.0),
-            0.8,
+            "game/assets/textures/grid_debug.png",
+            glm::vec3(-1., 0., 0.),
+            0.3,
         ),
     ]);
 

@@ -1,4 +1,3 @@
-use super::opengl;
 use super::{create_shader_program, ShaderProgram, ShaderType};
 
 pub const VERTEX_SOURCE: &str = r#"
@@ -6,8 +5,13 @@ pub const VERTEX_SOURCE: &str = r#"
 
     layout (location = 0) in vec3 aPos;
 
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
+
     void main() {
-       	gl_Position = vec4(aPos.xyz, 1.0);
+       	gl_Position = projection * view * model * vec4(aPos.xyz, 1.0);
     }
 "#;
 
@@ -24,10 +28,7 @@ pub const FRAGMENT_SOURCE: &str = r#"
 pub const TYPE: ShaderType = ShaderType::SimpleShader;
 
 pub fn get_program() -> ShaderProgram {
-    let vao = opengl::gen_vao();
-
     ShaderProgram {
         program_id: create_shader_program(VERTEX_SOURCE, FRAGMENT_SOURCE, ""),
-        vao,
     }
 }

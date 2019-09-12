@@ -14,29 +14,27 @@ pub struct UV {
     pub z: f32,
 }
 
-pub struct TexCoords(pub Vec<UV>);
-
 pub struct Texture<'p> {
     #[allow(dead_code)]
     file_path: &'p str,
-    pub uv: TexCoords,
-    pub id: Option<TextureId>,
-    pub raw: Option<Vec<u8>>,
-    pub dim: Option<TextureDim>,
+    pub uv: Vec<UV>,
+    pub id: TextureId,
+    pub raw: Vec<u8>,
+    pub dim: TextureDim,
 }
 
 impl<'p> Texture<'p> {
-    pub fn new(file_path: &'p str, uv: TexCoords) -> Self {
+    pub fn new(file_path: &'p str, uv: Vec<UV>) -> Self {
         let img =
             image::open(file_path).expect("Failed to load texture in memory");
 
-        let id = Some(opengl::generate_texture());
+        let id = opengl::generate_texture();
         let dim = img.to_rgb().dimensions();
-        let dim = Some(TextureDim {
+        let dim = TextureDim {
             width: dim.0,
             height: dim.1,
-        });
-        let raw = Some(img.raw_pixels());
+        };
+        let raw = img.raw_pixels();
 
         Self {
             file_path,
@@ -45,14 +43,5 @@ impl<'p> Texture<'p> {
             raw,
             dim,
         }
-    }
-
-    /// Unload texture from the system memory. Used often after
-    /// passing the texture bytes into the gpu.
-    pub fn mem_free(&mut self) {
-        self.raw = None;
-        self.dim = None;
-        // TODO: free texture id on opengl too.
-        self.id = None;
     }
 }

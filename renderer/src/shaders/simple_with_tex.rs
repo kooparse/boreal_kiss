@@ -1,4 +1,3 @@
-use super::opengl;
 use super::{create_shader_program, ShaderProgram, ShaderType};
 
 pub const VERTEX_SOURCE: &str = r#"
@@ -35,10 +34,7 @@ pub const FRAGMENT_SOURCE: &str = r#"
 pub const TYPE: ShaderType = ShaderType::SimpleTextureShader;
 
 pub fn get_program() -> ShaderProgram {
-    let vao = opengl::gen_vao();
-
     ShaderProgram {
         program_id: create_shader_program(VERTEX_SOURCE, FRAGMENT_SOURCE, ""),
-        vao,
     }
 }

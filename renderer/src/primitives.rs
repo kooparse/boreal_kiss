@@ -1,6 +1,6 @@
 use super::object::{RendererObject, Vertex, Vertices};
 use super::shaders::ShaderType;
-use super::texture::{TexCoords, Texture, UV};
+use super::texture::{Texture, UV};
 use nalgebra_glm as glm;
 
 /// Create a renderable triangle object, ready
@@ -11,7 +11,7 @@ pub fn create_triangle_object(
     position: glm::TVec3<f32>,
     scale: f32,
 ) -> RendererObject {
-    let coords = TexCoords(vec![
+    let coords = vec![
         UV {
             x: 0.0,
             y: 0.0,
@@ -32,7 +32,7 @@ pub fn create_triangle_object(
             y: 0.0,
             z: 0.0,
         },
-    ]);
+    ];
 
     let mut tex = Texture::new(texture_path, coords);
 
@@ -60,7 +60,6 @@ pub fn create_triangle_object(
             },
         ],
         indices: vec![0, 1, 2, 0, 2, 3],
-        ebo: None,
     };
 
     RendererObject {

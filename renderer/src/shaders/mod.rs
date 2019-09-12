@@ -1,6 +1,5 @@
 pub mod simple;
 pub mod simple_with_tex;
-use super::opengl;
 use gl::{self, types::GLchar};
 use std::{collections::HashMap, ffi::CString, ptr, str};
 
@@ -16,7 +15,6 @@ pub enum ShaderType {
 /// Map vertex array object to shader.
 pub struct ShaderProgram {
     pub program_id: ShaderProgramId,
-    pub vao: u32,
 }
 
 /// We use one vao per shader; I guess that it's the

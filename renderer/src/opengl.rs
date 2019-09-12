@@ -1,11 +1,14 @@
 use super::object::{RendererObject, Vertex};
 use super::shaders::{ShaderProgramId, ShaderType};
-use super::texture::Texture;
+use super::texture::{Texture, UV};
 use super::Color;
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
 pub type VAO = u32;
+pub type VBO = u32;
+pub type EBO = u32;
+pub type TexId = u32;
 
 /// Used to check if opengl is loaded (crash otherwise).
 /// The method "slice_from_raw_parts" from the nightly would
@@ -76,17 +79,14 @@ pub fn use_vao(vao: VAO) {
     }
 }
 
-/// This create an vertex buffer object and load data
-/// to the gpu. TODO: I am guessing that we don't have to create a vbo per
-/// object.
-pub fn load_bytes_to_gpu(object: &RendererObject) {
+/// This create an vertex buffer object and load data.
+pub fn load_bytes_to_gpu(vbo: VBO, ebo: Option<EBO>, object: &RendererObject) {
     let vertices = object.align();
     let indices = &object.vertices.indices;
 
     unsafe {
-        let vbo = gen_buffer();
-
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
         gl::BufferData(
             gl::ARRAY_BUFFER,
             vertices.len() as isize * mem::size_of::<Vertex>() as isize,
@@ -95,7 +95,7 @@ pub fn load_bytes_to_gpu(object: &RendererObject) {
         );
 
         // Create EBO if indices is not empty.
-        if let Some(ebo) = object.vertices.ebo {
+        if let Some(ebo) = ebo {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
@@ -107,7 +107,7 @@ pub fn load_bytes_to_gpu(object: &RendererObject) {
     }
 }
 
-pub fn generate_texture() -> u32 {
+pub fn generate_texture() -> TexId {
     unsafe {
         let mut texture = 0;
         gl::GenTextures(1, &mut texture);
@@ -116,14 +116,10 @@ pub fn generate_texture() -> u32 {
 }
 
 pub unsafe fn load_tex_to_gpu(tex: &Texture) {
-    if tex.id.is_none() {
-        panic!("Crash: Tried to load texture with undefined texture id.");
-    }
+    let dim = &tex.dim;
+    let data = &tex.raw;
 
-    let dim = tex.dim.as_ref().unwrap();
-    let data = tex.raw.as_ref().unwrap();
-
-    gl::BindTexture(gl::TEXTURE_2D, tex.id.unwrap());
+    gl::BindTexture(gl::TEXTURE_2D, tex.id);
 
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
@@ -154,14 +150,17 @@ pub unsafe fn load_tex_to_gpu(tex: &Texture) {
 }
 
 /// Use a given vao then load data to the gpu.
-pub fn load_object_to_gpu(vao: VAO, object: &RendererObject) {
+pub fn load_object_to_gpu(
+    (vao, vbo, ebo): (VAO, VBO, Option<EBO>),
+    object: &RendererObject,
+) {
     unsafe {
         use_vao(vao);
-        load_bytes_to_gpu(&object);
+        load_bytes_to_gpu(vbo, ebo, &object);
 
         match object.shader_type {
             ShaderType::SimpleShader => {
-                let stride = (3 * mem::size_of::<f32>()) as i32;
+                let stride = mem::size_of::<Vertex>() as i32;
 
                 gl::VertexAttribPointer(
                     0,
@@ -175,7 +174,7 @@ pub fn load_object_to_gpu(vao: VAO, object: &RendererObject) {
             }
 
             ShaderType::SimpleTextureShader => {
-                let stride = (6 * mem::size_of::<f32>()) as i32;
+                let stride = (2 * mem::size_of::<Vertex>()) as i32;
                 load_tex_to_gpu(
                     &object
                         .texture
@@ -199,7 +198,7 @@ pub fn load_object_to_gpu(vao: VAO, object: &RendererObject) {
                     gl::FLOAT,
                     gl::FALSE,
                     stride,
-                    (3 * mem::size_of::<f32>()) as *const c_void,
+                    mem::size_of::<UV>() as *const c_void,
                 );
                 gl::EnableVertexAttribArray(1);
             }
