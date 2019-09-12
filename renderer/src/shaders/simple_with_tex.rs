@@ -24,10 +24,10 @@ pub const FRAGMENT_SOURCE: &str = r#"
     in vec3 TexCoord;
     out vec4 FragColor;
 
-    uniform sampler2D ourTexture;
+    uniform sampler2D tex_sample;
 
     void main() {
-       	FragColor = texture(ourTexture, TexCoord.xy);
+       	FragColor = texture(tex_sample, TexCoord.xy);
     }
 "#;
 

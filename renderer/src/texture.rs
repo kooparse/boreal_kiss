@@ -29,12 +29,14 @@ impl<'p> Texture<'p> {
             image::open(file_path).expect("Failed to load texture in memory");
 
         let id = opengl::generate_texture();
+
         let dim = img.to_rgb().dimensions();
         let dim = TextureDim {
             width: dim.0,
             height: dim.1,
         };
-        let raw = img.raw_pixels();
+        // Flip texture vertically so opengl uv mapping are set corretly.
+        let raw = img.flipv().raw_pixels();
 
         Self {
             file_path,

@@ -11,30 +11,31 @@ pub fn create_triangle_object(
     position: glm::TVec3<f32>,
     scale: f32,
 ) -> RendererObject {
-    let coords = vec![
-        UV {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        },
-        UV {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        },
-        UV {
-            x: 1.0,
-            y: 1.0,
-            z: 0.0,
-        },
-        UV {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        },
-    ];
-
-    let mut tex = Texture::new(texture_path, coords);
+    let mut tex = Texture::new(
+        texture_path,
+        vec![
+            UV {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            UV {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            UV {
+                x: 1.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            UV {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+        ],
+    );
 
     let vertices = Vertices {
         data: vec![

@@ -43,7 +43,7 @@ fn main() {
         primitives::create_triangle_object(
             "game/assets/textures/grid_debug.png",
             glm::vec3(-1., 0., 0.),
-            0.3,
+            0.4,
         ),
     ]);
 

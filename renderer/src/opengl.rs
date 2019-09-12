@@ -81,21 +81,45 @@ pub fn use_vao(vao: VAO) {
 
 /// This create an vertex buffer object and load data.
 pub fn load_bytes_to_gpu(vbo: VBO, ebo: Option<EBO>, object: &RendererObject) {
-    let vertices = object.align();
-    let indices = &object.vertices.indices;
+    let mut total_size = object.vertices.data.len() * mem::size_of::<Vertex>();
+
+    if let Some(texture) = &object.texture {
+        total_size += texture.uv.len() * mem::size_of::<UV>();
+    }
 
     unsafe {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
 
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            vertices.len() as isize * mem::size_of::<Vertex>() as isize,
-            vertices.as_ptr() as *const _,
+            total_size as isize,
+            ptr::null() as *const _,
             gl::STATIC_DRAW,
         );
 
+        // Vertex data.
+        gl::BufferSubData(
+            gl::ARRAY_BUFFER,
+            0,
+            (object.vertices.data.len() * mem::size_of::<Vertex>()) as isize,
+            object.vertices.data.as_ptr() as *const _,
+        );
+
+        // Texture data.
+        if let Some(texture) = &object.texture {
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                (object.vertices.data.len() * mem::size_of::<Vertex>())
+                    as isize,
+                (texture.uv.len() * mem::size_of::<UV>()) as isize,
+                texture.uv.as_ptr() as *const _,
+            );
+        }
+
         // Create EBO if indices is not empty.
         if let Some(ebo) = ebo {
+            let indices = &object.vertices.indices;
+
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
@@ -160,21 +184,18 @@ pub fn load_object_to_gpu(
 
         match object.shader_type {
             ShaderType::SimpleShader => {
-                let stride = mem::size_of::<Vertex>() as i32;
-
                 gl::VertexAttribPointer(
                     0,
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    stride,
+                    mem::size_of::<Vertex>() as i32,
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(0);
             }
 
             ShaderType::SimpleTextureShader => {
-                let stride = (2 * mem::size_of::<Vertex>()) as i32;
                 load_tex_to_gpu(
                     &object
                         .texture
@@ -187,7 +208,7 @@ pub fn load_object_to_gpu(
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    stride,
+                    mem::size_of::<Vertex>() as i32,
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(0);
@@ -197,8 +218,8 @@ pub fn load_object_to_gpu(
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    stride,
-                    mem::size_of::<UV>() as *const c_void,
+                    mem::size_of::<UV>() as i32,
+                    ptr::null(),
                 );
                 gl::EnableVertexAttribArray(1);
             }
