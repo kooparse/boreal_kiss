@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub};
 
 // Because we can't alias traits yet.
-trait GenericNumber:
+pub trait GenericNumber:
     Add<Output = Self>
     + Sub<Output = Self>
     + Mul<Output = Self>

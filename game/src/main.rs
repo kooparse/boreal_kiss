@@ -34,13 +34,15 @@ fn main() {
     let mut platform = Platform::from(platform_wrapper);
     let mut renderer = Renderer::from(&platform);
 
-    renderer.push(vec![
+    let _ids = renderer.push(vec![
         primitives::create_triangle_object(
+            "plane_1",
             "game/assets/textures/pos_debug.png",
             glm::vec3(1., 0.0, 0.0),
             1.0,
         ),
         primitives::create_triangle_object(
+            "plane_2",
             "game/assets/textures/grid_debug.png",
             glm::vec3(-1., 0., 0.),
             0.4,

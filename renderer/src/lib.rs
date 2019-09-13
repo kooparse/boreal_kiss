@@ -1,15 +1,16 @@
-mod object;
 mod opengl;
 pub mod primitives;
 mod shaders;
 mod texture;
+mod vertex;
 
 use nalgebra_glm as glm;
-use object::RendererObject;
 use opengl::{TexId, EBO, VAO, VBO};
 use shaders::{ShaderManager, ShaderType};
 use std::collections::HashMap;
 use std::ptr;
+use texture::Texture;
+use vertex::{Vector3, Vertex};
 
 type LoadedObjectId = u64;
 static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
@@ -45,18 +46,20 @@ impl RendererOptions {
     }
 }
 
-/// All the data needed to retrieve an object from the gpu memory.
+/// All the data linked to our backend renderer.
 struct GpuBound {
     vao: VAO,
     vbo: VBO,
-    texture_id: Option<TexId>,
     ebo: Option<EBO>,
-    data_len: usize,
+    texture_id: Option<TexId>,
+    primitives_len: usize,
     shader: ShaderType,
 }
 
 struct LoadedObject {
-    position: glm::TVec3<f32>,
+    #[allow(unused)]
+    name: String,
+    position: Vector3,
     gpu_bound: GpuBound,
 }
 
@@ -77,6 +80,40 @@ impl Drop for LoadedObject {
             } else {
                 gl::DeleteBuffers(1, [self.gpu_bound.vbo].as_ptr());
             }
+        }
+    }
+}
+
+pub struct Mesh<'t, 'n> {
+    pub name: &'n str,
+    pub vertex: Vertex,
+    pub texture: Option<Texture<'t>>,
+    pub shader_type: ShaderType,
+    pub position: glm::TVec3<f32>,
+}
+
+impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
+    fn from(object: &Mesh<'t, 'n>) -> LoadedObject {
+        // From system memmory to gpu memory.
+        let (vao, vbo, ebo, texture_id) = opengl::load_object_to_gpu(&object);
+
+        let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
+            object.vertex.indices.len()
+        });
+
+        let gpu_bound = GpuBound {
+            vao,
+            vbo,
+            ebo,
+            primitives_len,
+            shader: object.shader_type.clone(),
+            texture_id,
+        };
+
+        LoadedObject {
+            name: object.name.to_string(),
+            position: object.position,
+            gpu_bound,
         }
     }
 }
@@ -102,13 +139,6 @@ impl Renderer {
         // Compile all shaders and create corresponding vao.
         let shader_manager = ShaderManager::new();
 
-        let mut shader_render_group: HashMap<ShaderType, Vec<LoadedObjectId>> =
-            HashMap::new();
-
-        for key in shader_manager.list.keys() {
-            shader_render_group.insert(key.clone(), vec![]);
-        }
-
         let projection = glm::perspective(
             (options.dimension.0 / options.dimension.1) as f32,
             45.0,
@@ -124,13 +154,17 @@ impl Renderer {
         }
     }
 
-    /// We push objects into our render group and load data into gl.
-    pub fn push<'t>(&mut self, objects: Vec<RendererObject<'t>>) {
-        objects.into_iter().for_each(|object| unsafe {
+    /// We push objects into the object storage load data into gl.
+    pub fn push(&mut self, objects: Vec<Mesh>) -> Vec<LoadedObjectId> {
+        let mut ids = vec![];
+        objects.iter().for_each(|object| unsafe {
             LOADED_OBJECT_ID += 1;
+            ids.push(LOADED_OBJECT_ID);
             self.object_storage
                 .insert(LOADED_OBJECT_ID, LoadedObject::from(object));
         });
+
+        ids
     }
 
     pub fn draw(&mut self) {
@@ -168,12 +202,16 @@ impl Renderer {
                     gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
                     gl::DrawElements(
                         gl::TRIANGLES,
-                        gpu_bound.data_len as i32,
+                        gpu_bound.primitives_len as i32,
                         gl::UNSIGNED_INT,
                         ptr::null(),
                     );
                 } else {
-                    gl::DrawArrays(gl::TRIANGLES, 0, gpu_bound.data_len as i32);
+                    gl::DrawArrays(
+                        gl::TRIANGLES,
+                        0,
+                        gpu_bound.primitives_len as i32,
+                    );
                 }
             }
         }

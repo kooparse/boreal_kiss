@@ -1,7 +1,7 @@
-use super::object::{RendererObject, Vertex};
 use super::shaders::{ShaderProgramId, ShaderType};
-use super::texture::{Texture, UV};
-use super::Color;
+use super::texture::Texture;
+use super::vertex::Vector3;
+use super::{Color, Mesh};
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
@@ -80,14 +80,21 @@ pub fn use_vao(vao: VAO) {
 }
 
 /// This create an vertex buffer object and load data.
-pub fn load_bytes_to_gpu(vbo: VBO, ebo: Option<EBO>, object: &RendererObject) {
-    let mut total_size = object.vertices.data.len() * mem::size_of::<Vertex>();
+pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
+    let with_ebo = !object.vertex.indices.is_empty();
 
-    if let Some(texture) = &object.texture {
-        total_size += texture.uv.len() * mem::size_of::<UV>();
+    let mut total_size =
+        object.vertex.primitives.len() * mem::size_of::<Vector3>();
+
+    if object.texture.is_some() {
+        total_size += object.vertex.uv_coords.len() * mem::size_of::<Vector3>();
     }
 
     unsafe {
+        use_vao(vao);
+        let vbo = gen_buffer();
+        let ebo = if with_ebo { Some(gen_buffer()) } else { None };
+
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
 
         gl::BufferData(
@@ -97,28 +104,30 @@ pub fn load_bytes_to_gpu(vbo: VBO, ebo: Option<EBO>, object: &RendererObject) {
             gl::STATIC_DRAW,
         );
 
-        // Vertex data.
+        // Position data.
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
             0,
-            (object.vertices.data.len() * mem::size_of::<Vertex>()) as isize,
-            object.vertices.data.as_ptr() as *const _,
+            (object.vertex.primitives.len() * mem::size_of::<Vector3>())
+                as isize,
+            object.vertex.primitives.as_ptr() as *const _,
         );
 
         // Texture data.
-        if let Some(texture) = &object.texture {
+        if object.texture.is_some() {
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
-                (object.vertices.data.len() * mem::size_of::<Vertex>())
+                (object.vertex.primitives.len() * mem::size_of::<Vector3>())
                     as isize,
-                (texture.uv.len() * mem::size_of::<UV>()) as isize,
-                texture.uv.as_ptr() as *const _,
+                (object.vertex.uv_coords.len() * mem::size_of::<Vector3>())
+                    as isize,
+                object.vertex.uv_coords.as_ptr() as *const _,
             );
         }
 
         // Create EBO if indices is not empty.
         if let Some(ebo) = ebo {
-            let indices = &object.vertices.indices;
+            let indices = &object.vertex.indices;
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
@@ -128,6 +137,8 @@ pub fn load_bytes_to_gpu(vbo: VBO, ebo: Option<EBO>, object: &RendererObject) {
                 gl::STATIC_DRAW,
             );
         }
+
+        (vbo, ebo)
     }
 }
 
@@ -139,11 +150,14 @@ pub fn generate_texture() -> TexId {
     }
 }
 
-pub unsafe fn load_tex_to_gpu(tex: &Texture) {
+pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     let dim = &tex.dim;
     let data = &tex.raw;
 
-    gl::BindTexture(gl::TEXTURE_2D, tex.id);
+    let tex_id = generate_texture();
+
+    use_vao(vao);
+    gl::BindTexture(gl::TEXTURE_2D, tex_id);
 
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
@@ -162,8 +176,8 @@ pub unsafe fn load_tex_to_gpu(tex: &Texture) {
         gl::TEXTURE_2D,
         0,
         gl::RGBA as i32,
-        dim.width as i32,
-        dim.height as i32,
+        dim.0 as i32,
+        dim.1 as i32,
         0,
         gl::RGBA,
         gl::UNSIGNED_BYTE,
@@ -171,16 +185,25 @@ pub unsafe fn load_tex_to_gpu(tex: &Texture) {
     );
 
     gl::GenerateMipmap(gl::TEXTURE_2D);
+
+    tex_id
 }
 
 /// Use a given vao then load data to the gpu.
 pub fn load_object_to_gpu(
-    (vao, vbo, ebo): (VAO, VBO, Option<EBO>),
-    object: &RendererObject,
-) {
+    object: &Mesh,
+) -> (VAO, VBO, Option<EBO>, Option<TexId>) {
     unsafe {
+        let vao = gen_vao();
+
+        let (vbo, ebo) = load_bytes_to_gpu(vao, &object);
+
+        let tex_id = object
+            .texture
+            .as_ref()
+            .map(|tex| load_tex_to_gpu(vao, &tex));
+
         use_vao(vao);
-        load_bytes_to_gpu(vbo, ebo, &object);
 
         match object.shader_type {
             ShaderType::SimpleShader => {
@@ -189,26 +212,19 @@ pub fn load_object_to_gpu(
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    mem::size_of::<Vertex>() as i32,
+                    mem::size_of::<Vector3>() as i32,
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(0);
             }
 
             ShaderType::SimpleTextureShader => {
-                load_tex_to_gpu(
-                    &object
-                        .texture
-                        .as_ref()
-                        .expect("Crash: texture object is not set"),
-                );
-
                 gl::VertexAttribPointer(
                     0,
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    mem::size_of::<Vertex>() as i32,
+                    mem::size_of::<Vector3>() as i32,
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(0);
@@ -218,12 +234,14 @@ pub fn load_object_to_gpu(
                     3,
                     gl::FLOAT,
                     gl::FALSE,
-                    mem::size_of::<UV>() as i32,
+                    mem::size_of::<Vector3>() as i32,
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(1);
             }
         }
+
+        (vao, vbo, ebo, tex_id)
     }
 }
 
