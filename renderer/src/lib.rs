@@ -59,6 +59,7 @@ struct GpuBound {
 struct LoadedObject {
     #[allow(unused)]
     name: String,
+    is_hidden: bool,
     position: Vector3,
     gpu_bound: GpuBound,
 }
@@ -112,6 +113,7 @@ impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
 
         LoadedObject {
             name: object.name.to_string(),
+            is_hidden: false,
             position: object.position,
             gpu_bound,
         }
@@ -178,8 +180,37 @@ impl Renderer {
         }
     }
 
+    /// Hide a mesh (it will still be loaded in the gpu mem).
+    pub fn hide_mesh(&mut self, id: LoadedObjectId) {
+        if let Some(object) = self.object_storage.get_mut(&id) {
+            object.is_hidden = true;
+        }
+    }
+
+    /// Show a hidden mesh.
+    pub fn show_mesh(&mut self, id: LoadedObjectId) {
+        if let Some(object) = self.object_storage.get_mut(&id) {
+            object.is_hidden = false;
+        }
+    }
+
+    /// Toggle show/hidden mesh.
+    pub fn toggle_mesh(&mut self, id: LoadedObjectId) {
+        if let Some(object) = self.object_storage.get_mut(&id) {
+            if object.is_hidden {
+                self.show_mesh(id);
+            } else {
+                self.hide_mesh(id);
+            }
+        }
+    }
+
     pub fn draw(&mut self) {
         for obj in self.object_storage.values() {
+            if obj.is_hidden {
+                continue;
+            }
+
             let gpu_bound = &obj.gpu_bound;
             let program = &self.shader_manager.list[&gpu_bound.shader];
 

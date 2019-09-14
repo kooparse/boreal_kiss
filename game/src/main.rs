@@ -61,6 +61,8 @@ fn main() {
         renderer.clear_screen();
         renderer.draw();
 
+        input.once(Key::A, || renderer.toggle_mesh(_ids[0]));
+
         window.swap_buffers();
         window.should_close() || input.is_pressed(Key::Esc)
     });
