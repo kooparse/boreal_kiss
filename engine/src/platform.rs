@@ -1,3 +1,4 @@
+use super::input::Input;
 use renderer::{Renderer, RendererOptions};
 
 pub type DpiFactor = f64;
@@ -19,7 +20,7 @@ pub trait PlatformWrapper {
     fn get_dpi_factor(&self) -> DpiFactor;
     fn should_close(&self) -> bool;
     fn swap_buffers(&self);
-    fn poll_events(&mut self);
+    fn update_inputs(&mut self, input: &mut Input);
     fn load_opengl(&self) -> RendererOptions;
 }
 

@@ -155,7 +155,7 @@ impl Renderer {
     }
 
     /// We push objects into the object storage load data into gl.
-    pub fn push(&mut self, objects: Vec<Mesh>) -> Vec<LoadedObjectId> {
+    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<LoadedObjectId> {
         let mut ids = vec![];
         objects.iter().for_each(|object| unsafe {
             LOADED_OBJECT_ID += 1;
@@ -165,6 +165,17 @@ impl Renderer {
         });
 
         ids
+    }
+
+    /// We push objects into the object storage load data into gl.
+    pub fn add_mesh(&mut self, object: Mesh) -> LoadedObjectId {
+        unsafe {
+            LOADED_OBJECT_ID += 1;
+            self.object_storage
+                .insert(LOADED_OBJECT_ID, LoadedObject::from(&object));
+
+            LOADED_OBJECT_ID
+        }
     }
 
     pub fn draw(&mut self) {
@@ -217,13 +228,13 @@ impl Renderer {
         }
     }
 
-    pub fn remove_item(&mut self, id: LoadedObjectId) {
+    pub fn remove_mesh(&mut self, id: LoadedObjectId) {
         self.object_storage.remove(&id);
     }
 
     /// The method shrink_to_fit will frees any allocated
     /// memory that is not used.
-    pub fn remove_all(&mut self) {
+    pub fn flush(&mut self) {
         self.object_storage.clear();
         self.object_storage.shrink_to_fit();
     }
@@ -235,6 +246,6 @@ impl Renderer {
 
 impl Drop for Renderer {
     fn drop(&mut self) {
-        self.remove_all();
+        self.flush();
     }
 }

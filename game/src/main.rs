@@ -7,6 +7,7 @@ use crate::constants::{
 // use engine::window_xbox as window_x64;
 use engine::{
     game_loop::GameLoop,
+    input::{Input, Key},
     platform::{self, Platform},
     platform_x64_winit as platform_x64,
 };
@@ -33,8 +34,9 @@ fn main() {
     let mut game_loop = GameLoop::new();
     let mut platform = Platform::from(platform_wrapper);
     let mut renderer = Renderer::from(&platform);
+    let mut input = Input::new();
 
-    let _ids = renderer.push(vec![
+    let _ids = renderer.add_meshes(vec![
         primitives::create_triangle_object(
             "plane_1",
             "game/assets/textures/pos_debug.png",
@@ -54,13 +56,13 @@ fn main() {
     let window = platform.get_mut();
 
     game_loop.start(|_time, _fps| {
-        window.poll_events();
+        window.update_inputs(&mut input);
 
         renderer.clear_screen();
         renderer.draw();
 
         window.swap_buffers();
-        window.should_close()
+        window.should_close() || input.is_pressed(Key::Esc)
     });
 
     dbg!("Game exited correctly");

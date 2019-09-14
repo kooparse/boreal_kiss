@@ -3,12 +3,13 @@
 ///
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
+use crate::input::{Input, Key, Modifier};
 use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
 use gl;
 use glutin::{
-    dpi, Api, ContextBuilder, ContextWrapper, Event, EventsLoop, GlRequest,
-    PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow, WindowBuilder,
-    WindowEvent,
+    dpi, Api, ContextBuilder, ContextWrapper, ElementState, Event, EventsLoop,
+    GlRequest, PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow,
+    WindowBuilder, WindowEvent,
 };
 use renderer::{Color, RendererOptions};
 use std::convert::From;
@@ -94,26 +95,126 @@ impl PlatformWrapper for WinitPlatform {
             pixel_format.multisampling.is_some(),
             true,
             Color(0.1, 0.1, 0.2, 1.0),
-            (dim.width, dim.height)
+            (dim.width, dim.height),
         )
     }
 
-    fn poll_events(&mut self) {
+    fn update_inputs(&mut self, game_input: &mut Input) {
         let mut should_close = false;
 
         self.event_loop
             .poll_events(|glutin_event| match &glutin_event {
-                Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => {
-                        should_close = true;
-                    }
-                    WindowEvent::KeyboardInput { input, .. } => {
-                        if let Some(keycode) = input.virtual_keycode {
-                            should_close = keycode == VirtualKeyCode::Escape;
+                Event::WindowEvent { event, .. } => {
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            should_close = true;
                         }
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            let is_pressed =
+                                input.state == ElementState::Pressed;
+
+                            if let Some(keycode) = input.virtual_keycode {
+                                match keycode {
+                                    VirtualKeyCode::A => game_input
+                                        .update_key(Key::A, is_pressed),
+                                    VirtualKeyCode::B => game_input
+                                        .update_key(Key::B, is_pressed),
+                                    VirtualKeyCode::C => game_input
+                                        .update_key(Key::C, is_pressed),
+                                    VirtualKeyCode::D => game_input
+                                        .update_key(Key::D, is_pressed),
+                                    VirtualKeyCode::E => game_input
+                                        .update_key(Key::E, is_pressed),
+                                    VirtualKeyCode::F => game_input
+                                        .update_key(Key::F, is_pressed),
+                                    VirtualKeyCode::G => game_input
+                                        .update_key(Key::G, is_pressed),
+                                    VirtualKeyCode::H => game_input
+                                        .update_key(Key::H, is_pressed),
+                                    VirtualKeyCode::I => game_input
+                                        .update_key(Key::I, is_pressed),
+                                    VirtualKeyCode::J => game_input
+                                        .update_key(Key::J, is_pressed),
+                                    VirtualKeyCode::K => game_input
+                                        .update_key(Key::K, is_pressed),
+                                    VirtualKeyCode::L => game_input
+                                        .update_key(Key::L, is_pressed),
+                                    VirtualKeyCode::M => game_input
+                                        .update_key(Key::M, is_pressed),
+                                    VirtualKeyCode::O => game_input
+                                        .update_key(Key::O, is_pressed),
+                                    VirtualKeyCode::P => game_input
+                                        .update_key(Key::P, is_pressed),
+                                    VirtualKeyCode::Q => game_input
+                                        .update_key(Key::Q, is_pressed),
+                                    VirtualKeyCode::R => game_input
+                                        .update_key(Key::R, is_pressed),
+                                    VirtualKeyCode::S => game_input
+                                        .update_key(Key::S, is_pressed),
+                                    VirtualKeyCode::T => game_input
+                                        .update_key(Key::T, is_pressed),
+                                    VirtualKeyCode::U => game_input
+                                        .update_key(Key::U, is_pressed),
+                                    VirtualKeyCode::V => game_input
+                                        .update_key(Key::V, is_pressed),
+                                    VirtualKeyCode::W => game_input
+                                        .update_key(Key::W, is_pressed),
+                                    VirtualKeyCode::X => game_input
+                                        .update_key(Key::X, is_pressed),
+                                    VirtualKeyCode::Y => game_input
+                                        .update_key(Key::Y, is_pressed),
+                                    VirtualKeyCode::Z => game_input
+                                        .update_key(Key::Z, is_pressed),
+                                    VirtualKeyCode::Escape => {
+                                        game_input
+                                            .update_key(Key::Esc, is_pressed);
+                                    }
+                                    VirtualKeyCode::Left => {
+                                        game_input
+                                            .update_key(Key::Left, is_pressed);
+                                    }
+                                    VirtualKeyCode::Down => {
+                                        game_input
+                                            .update_key(Key::Down, is_pressed);
+                                    }
+                                    VirtualKeyCode::Up => {
+                                        game_input
+                                            .update_key(Key::Up, is_pressed);
+                                    }
+                                    VirtualKeyCode::Right => {
+                                        game_input
+                                            .update_key(Key::Right, is_pressed);
+                                    }
+                                    VirtualKeyCode::Back => {
+                                        game_input
+                                            .update_key(Key::Bspc, is_pressed);
+                                    }
+                                    VirtualKeyCode::Return => {
+                                        game_input
+                                            .update_key(Key::Enter, is_pressed);
+                                    }
+                                    VirtualKeyCode::Tab => {
+                                        game_input
+                                            .update_key(Key::Tab, is_pressed);
+                                    }
+                                    VirtualKeyCode::Space => {
+                                        game_input
+                                            .update_key(Key::Space, is_pressed);
+                                    }
+                                    _ => (),
+                                };
+
+                                game_input.set_modifier(Modifier {
+                                    ctrl: input.modifiers.ctrl,
+                                    shift: input.modifiers.shift,
+                                    alt: input.modifiers.alt,
+                                    os: input.modifiers.logo,
+                                });
+                            }
+                        }
+                        _ => (),
                     }
-                    _ => (),
-                },
+                }
                 _ => (),
             });
 
