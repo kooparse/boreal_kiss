@@ -31,6 +31,13 @@ pub fn get_opengl_loaded() {
     }
 }
 
+#[allow(dead_code)]
+pub fn set_viewport(width: i32, height: i32) {
+    unsafe {
+        gl::Viewport(0, 0, width, height);
+    }
+}
+
 /// Set multisampling.
 pub fn set_multisampling(enabled: bool) {
     unsafe {

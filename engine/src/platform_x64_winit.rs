@@ -11,7 +11,7 @@ use glutin::{
     GlRequest, PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow,
     WindowBuilder, WindowEvent,
 };
-use renderer::{Color, RendererOptions};
+use renderer::{Color, RendererDimension, RendererOptions};
 use std::convert::From;
 
 /// Construct a window for all desktop with the
@@ -21,6 +21,7 @@ use std::convert::From;
 pub struct WinitPlatform {
     should_close: bool,
     event_loop: EventsLoop,
+    window_size_changed: bool,
     context: ContextWrapper<PossiblyCurrent, GlutinWindow>,
 }
 
@@ -52,6 +53,7 @@ impl WinitPlatform {
 
         Self {
             should_close: false,
+            window_size_changed: false,
             context,
             event_loop,
         }
@@ -79,6 +81,12 @@ impl PlatformWrapper for WinitPlatform {
             .expect("Problem with gl buffer swap");
     }
 
+    fn on_resize(&self, callback: &mut dyn FnMut(GameResolution)) {
+        if self.window_size_changed {
+            callback(self.get_dimension())
+        }
+    }
+
     fn should_close(&self) -> bool {
         self.should_close
     }
@@ -95,17 +103,25 @@ impl PlatformWrapper for WinitPlatform {
             pixel_format.multisampling.is_some(),
             true,
             Color(0.1, 0.1, 0.2, 1.0),
-            (dim.width, dim.height),
+            RendererDimension {
+                width: dim.width,
+                height: dim.height,
+                dpi_factor: self.get_dpi_factor(),
+            },
         )
     }
 
     fn update_inputs(&mut self, game_input: &mut Input) {
+        let mut window_size_changed = false;
         let mut should_close = false;
 
         self.event_loop
             .poll_events(|glutin_event| match &glutin_event {
                 Event::WindowEvent { event, .. } => {
                     match event {
+                        WindowEvent::Resized(_) => {
+                            window_size_changed = true;
+                        }
                         WindowEvent::CloseRequested => {
                             should_close = true;
                         }
@@ -218,6 +234,7 @@ impl PlatformWrapper for WinitPlatform {
                 _ => (),
             });
 
+        self.window_size_changed = window_size_changed;
         self.should_close = should_close;
     }
 }

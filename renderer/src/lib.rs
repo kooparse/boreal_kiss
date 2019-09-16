@@ -20,7 +20,12 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 #[derive(Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
-pub type RendererDimension = (f64, f64);
+#[derive(Default)]
+pub struct RendererDimension {
+    pub width: f64,
+    pub height: f64,
+    pub dpi_factor: f64,
+}
 
 #[derive(Default)]
 pub struct RendererOptions {
@@ -142,7 +147,7 @@ impl Renderer {
         let shader_manager = ShaderManager::new();
 
         let projection = glm::perspective(
-            (options.dimension.0 / options.dimension.1) as f32,
+            (options.dimension.width / options.dimension.height) as f32,
             45.0,
             0.1,
             100.0,
@@ -156,7 +161,33 @@ impl Renderer {
         }
     }
 
-    /// We push objects into the object storage load data into gl.
+    /// TODO: Fix this function. The ratio isn't good. We should correct
+    /// the aspect ratio on resize. It currently zoom in the matrix.
+    pub fn platform_resized(&mut self, _width: f64, _height: f64) {
+        // self.options.dimension.width = width;
+        // self.options.dimension.height = height;
+
+        // let dpi_factor = self.options.dimension.dpi_factor;
+
+        // opengl::set_viewport(
+        //     (width * dpi_factor) as i32,
+        //     (height * dpi_factor) as i32,
+        // );
+
+        // self.projection = glm::perspective(1.3 as f32, 45.0, 0.1, 100.0);
+    }
+
+    /// We push objects into the storage and load data into gl.
+    pub fn add_mesh(&mut self, object: Mesh) -> LoadedObjectId {
+        unsafe {
+            LOADED_OBJECT_ID += 1;
+            self.object_storage
+                .insert(LOADED_OBJECT_ID, LoadedObject::from(&object));
+
+            LOADED_OBJECT_ID
+        }
+    }
+
     pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<LoadedObjectId> {
         let mut ids = vec![];
         objects.iter().for_each(|object| unsafe {
@@ -167,17 +198,6 @@ impl Renderer {
         });
 
         ids
-    }
-
-    /// We push objects into the object storage load data into gl.
-    pub fn add_mesh(&mut self, object: Mesh) -> LoadedObjectId {
-        unsafe {
-            LOADED_OBJECT_ID += 1;
-            self.object_storage
-                .insert(LOADED_OBJECT_ID, LoadedObject::from(&object));
-
-            LOADED_OBJECT_ID
-        }
     }
 
     /// Hide a mesh (it will still be loaded in the gpu mem).

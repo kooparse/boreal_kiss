@@ -3,6 +3,7 @@ use renderer::{Renderer, RendererOptions};
 
 pub type DpiFactor = f64;
 
+#[derive(Debug)]
 pub struct GameResolution {
     pub width: f64,
     pub height: f64,
@@ -19,6 +20,8 @@ pub trait PlatformWrapper {
     fn get_dimension(&self) -> GameResolution;
     fn get_dpi_factor(&self) -> DpiFactor;
     fn should_close(&self) -> bool;
+    // TODO: Why reference of closure here?
+    fn on_resize(&self, callback: &mut dyn FnMut(GameResolution));
     fn swap_buffers(&self);
     fn update_inputs(&mut self, input: &mut Input);
     fn load_opengl(&self) -> RendererOptions;

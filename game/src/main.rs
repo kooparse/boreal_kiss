@@ -61,6 +61,10 @@ fn main() {
         renderer.clear_screen();
         renderer.draw();
 
+        window.on_resize(&mut |resolusion| {
+            renderer.platform_resized(resolusion.width, resolusion.height);
+        });
+
         input.once(Key::A, || renderer.toggle_mesh(_ids[0]));
 
         window.swap_buffers();
