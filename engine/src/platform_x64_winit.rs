@@ -3,13 +3,13 @@
 ///
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
-use crate::input::{Input, Key, Modifier};
+use crate::input::{Cursor, Input, Key, Modifier, MouseButton};
 use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
 use gl;
 use glutin::{
-    dpi, Api, ContextBuilder, ContextWrapper, ElementState, Event, EventsLoop,
-    GlRequest, PossiblyCurrent, VirtualKeyCode, Window as GlutinWindow,
-    WindowBuilder, WindowEvent,
+    dpi, Api, ContextBuilder, ContextWrapper, DeviceEvent, ElementState, Event,
+    EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
+    VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
 use renderer::{Color, RendererDimension, RendererOptions};
 use std::convert::From;
@@ -114,9 +114,22 @@ impl PlatformWrapper for WinitPlatform {
     fn update_inputs(&mut self, game_input: &mut Input) {
         let mut window_size_changed = false;
         let mut should_close = false;
+        game_input.cursor.has_moved = false;
 
         self.event_loop
             .poll_events(|glutin_event| match &glutin_event {
+                Event::DeviceEvent { event, .. } => match &event {
+                    DeviceEvent::MouseMotion { delta, .. } => {
+                        let moved = Cursor {
+                            delta: *delta,
+                            has_moved: true,
+                            ..game_input.cursor
+                        };
+
+                        game_input.update_cursor_position(moved);
+                    }
+                    _ => (),
+                },
                 Event::WindowEvent { event, .. } => {
                     match event {
                         WindowEvent::Resized(_) => {
@@ -124,6 +137,37 @@ impl PlatformWrapper for WinitPlatform {
                         }
                         WindowEvent::CloseRequested => {
                             should_close = true;
+                        }
+                        // LogicalSized => scaled by dpi factor.
+                        WindowEvent::CursorMoved { position, .. } => {
+                            let moved = Cursor {
+                                position: (position.x, position.y),
+                                has_moved: true,
+                                ..game_input.cursor
+                            };
+
+                            game_input.update_cursor_position(moved);
+                        }
+                        WindowEvent::MouseInput { state, button, .. } => {
+                            let is_clicked = *state == ElementState::Pressed;
+
+                            match button {
+                                GlMouseButton::Right => game_input
+                                    .update_mouse(
+                                        MouseButton::Right,
+                                        is_clicked,
+                                    ),
+                                GlMouseButton::Left => game_input.update_mouse(
+                                    MouseButton::Left,
+                                    is_clicked,
+                                ),
+                                GlMouseButton::Middle => game_input
+                                    .update_mouse(
+                                        MouseButton::Middle,
+                                        is_clicked,
+                                    ),
+                                _ => (),
+                            }
                         }
                         WindowEvent::KeyboardInput { input, .. } => {
                             let is_pressed =

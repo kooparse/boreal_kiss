@@ -7,7 +7,7 @@ use crate::constants::{
 // use engine::window_xbox as window_x64;
 use engine::{
     game_loop::GameLoop,
-    input::{Input, Key},
+    input::{Input, Key, MouseButton},
     platform::{self, Platform},
     platform_x64_winit as platform_x64,
 };
@@ -65,7 +65,10 @@ fn main() {
             renderer.platform_resized(resolusion.width, resolusion.height);
         });
 
-        input.once(Key::A, || renderer.toggle_mesh(_ids[0]));
+        input.pressed_once(Key::A, || renderer.toggle_mesh(_ids[0]));
+        input.clicked(MouseButton::Left, |c_pos| {
+            dbg!(c_pos);
+        });
 
         window.swap_buffers();
         window.should_close() || input.is_pressed(Key::Esc)
