@@ -7,6 +7,7 @@ mod vertex;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use shaders::{ShaderManager, ShaderType};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
@@ -21,15 +22,7 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
 #[derive(Default)]
-pub struct RendererDimension {
-    pub width: f64,
-    pub height: f64,
-    pub dpi_factor: f64,
-}
-
-#[derive(Default)]
 pub struct RendererOptions {
-    dimension: RendererDimension,
     with_multisampling: bool,
     with_depth_testing: bool,
     default_color: Color,
@@ -40,13 +33,11 @@ impl RendererOptions {
         with_multisampling: bool,
         with_depth_testing: bool,
         default_color: Color,
-        dimension: RendererDimension,
     ) -> Self {
         Self {
             with_multisampling,
             with_depth_testing,
             default_color,
-            dimension,
         }
     }
 }
@@ -125,17 +116,31 @@ impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
     }
 }
 
-pub struct Renderer {
+pub struct RenderState {
+    pub projection: glm::TMat4<f32>,
+    pub view: glm::TMat4<f32>,
+}
+
+impl RenderState {
+    pub fn new(projection: glm::TMat4<f32>, view: glm::TMat4<f32>) -> Self {
+        Self { projection, view }
+    }
+}
+
+pub struct Renderer<'r> {
     options: RendererOptions,
     object_storage: HashMap<LoadedObjectId, LoadedObject>,
     shader_manager: ShaderManager,
-    projection: glm::Mat4,
+    state: &'r RefCell<RenderState>,
 }
 
-impl Renderer {
+impl<'r> Renderer<'r> {
     /// Create, compile and generate vertex array objects (vao) for our
     /// renderer.
-    pub fn new(options: RendererOptions) -> Self {
+    pub fn new(
+        options: RendererOptions,
+        state: &'r RefCell<RenderState>,
+    ) -> Self {
         // Panic if opengl functions not loaded.
         opengl::get_opengl_loaded();
 
@@ -146,16 +151,9 @@ impl Renderer {
         // Compile all shaders and create corresponding vao.
         let shader_manager = ShaderManager::new();
 
-        let projection = glm::perspective(
-            (options.dimension.width / options.dimension.height) as f32,
-            45.0,
-            0.1,
-            100.0,
-        );
-
         Self {
             options,
-            projection,
+            state,
             object_storage: HashMap::new(),
             shader_manager,
         }
@@ -163,18 +161,11 @@ impl Renderer {
 
     /// TODO: Fix this function. The ratio isn't good. We should correct
     /// the aspect ratio on resize. It currently zoom in the matrix.
-    pub fn platform_resized(&mut self, _width: f64, _height: f64) {
-        // self.options.dimension.width = width;
-        // self.options.dimension.height = height;
-
-        // let dpi_factor = self.options.dimension.dpi_factor;
-
+    pub fn update_viewport(&mut self, _width: f64, _height: f64, _dpi: f64) {
         // opengl::set_viewport(
-        //     (width * dpi_factor) as i32,
-        //     (height * dpi_factor) as i32,
+        //     (width * dpi) as i32,
+        //     (height * dpi) as i32,
         // );
-
-        // self.projection = glm::perspective(1.3 as f32, 45.0, 0.1, 100.0);
     }
 
     /// We push objects into the storage and load data into gl.
@@ -231,20 +222,23 @@ impl Renderer {
                 continue;
             }
 
+            let state = self.state.borrow();
             let gpu_bound = &obj.gpu_bound;
             let program = &self.shader_manager.list[&gpu_bound.shader];
 
             opengl::use_shader_program(program.program_id);
 
-            let mut view = glm::Mat4::identity();
-            view = glm::translate(&view, &glm::vec3(0.0, 0.0, -3.0));
-            shaders::set_matrix4(program.program_id, "view", view.as_slice());
+            shaders::set_matrix4(
+                program.program_id,
+                "view",
+                state.view.as_slice(),
+            );
 
             // TODO: Don't set projection matrix in the render loop.
             shaders::set_matrix4(
                 program.program_id,
                 "projection",
-                self.projection.as_slice(),
+                state.projection.as_slice(),
             );
 
             opengl::use_vao(gpu_bound.vao);
@@ -295,7 +289,7 @@ impl Renderer {
     }
 }
 
-impl Drop for Renderer {
+impl<'r> Drop for Renderer<'r> {
     fn drop(&mut self) {
         self.flush();
     }

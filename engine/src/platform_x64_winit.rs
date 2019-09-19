@@ -4,14 +4,14 @@
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
 use crate::input::{Cursor, Input, Key, Modifier, MouseButton};
-use crate::platform::{DpiFactor, GameResolution, Platform, PlatformWrapper};
+use crate::platform::{GameResolution, Platform, PlatformWrapper};
 use gl;
 use glutin::{
     dpi, Api, ContextBuilder, ContextWrapper, DeviceEvent, ElementState, Event,
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{Color, RendererDimension, RendererOptions};
+use renderer::{Color, RendererOptions};
 use std::convert::From;
 
 /// Construct a window for all desktop with the
@@ -63,16 +63,14 @@ impl WinitPlatform {
 impl PlatformWrapper for WinitPlatform {
     fn get_dimension(&self) -> GameResolution {
         let window = self.context.window();
+        let dpi = window.get_hidpi_factor();
         let inner_size = window.get_inner_size().unwrap();
 
         GameResolution {
             width: inner_size.width,
             height: inner_size.height,
+            dpi,
         }
-    }
-
-    fn get_dpi_factor(&self) -> DpiFactor {
-        self.context.window().get_hidpi_factor()
     }
 
     fn swap_buffers(&self) {
@@ -92,7 +90,6 @@ impl PlatformWrapper for WinitPlatform {
     }
 
     fn load_opengl(&self) -> RendererOptions {
-        let dim = self.get_dimension();
         let pixel_format = self.context.get_pixel_format();
 
         gl::load_with(|symbol| {
@@ -103,11 +100,6 @@ impl PlatformWrapper for WinitPlatform {
             pixel_format.multisampling.is_some(),
             true,
             Color(0.1, 0.1, 0.2, 1.0),
-            RendererDimension {
-                width: dim.width,
-                height: dim.height,
-                dpi_factor: self.get_dpi_factor(),
-            },
         )
     }
 

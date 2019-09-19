@@ -1,4 +1,5 @@
 mod constants;
+mod state;
 
 use crate::constants::{
     DEFAULT_HEIGHT, DEFAULT_MULTISAMPLING, DEFAULT_WIDTH, GAME_NAME, WITH_VSYNC,
@@ -13,6 +14,7 @@ use engine::{
 };
 use nalgebra_glm as glm;
 use renderer::{primitives, Renderer};
+use state::GameState;
 #[cfg(any(target_os = "macos", target_os = "windows",))]
 
 fn main() {
@@ -33,7 +35,11 @@ fn main() {
 
     let mut game_loop = GameLoop::new();
     let mut platform = Platform::from(platform_wrapper);
-    let mut renderer = Renderer::from(&platform);
+    let state = GameState::default();
+
+    let mut renderer =
+        Renderer::new(platform.get().load_opengl(), &state.render_state);
+
     let mut input = Input::new();
 
     let _ids = renderer.add_meshes(vec![
@@ -61,8 +67,16 @@ fn main() {
         renderer.clear_screen();
         renderer.draw();
 
-        window.on_resize(&mut |resolusion| {
-            renderer.platform_resized(resolusion.width, resolusion.height);
+        window.on_resize(&mut |res| {
+            let mut render_state = state.render_state.borrow_mut();
+
+            renderer.update_viewport(res.width, res.height, res.dpi);
+            render_state.projection = glm::perspective(
+                (res.width / res.height) as f32,
+                45.0,
+                0.1,
+                100.0,
+            );
         });
 
         input.pressed_once(Key::A, || renderer.toggle_mesh(_ids[0]));

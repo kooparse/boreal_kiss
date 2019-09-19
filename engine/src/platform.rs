@@ -1,5 +1,5 @@
 use super::input::Input;
-use renderer::{Renderer, RendererOptions};
+use renderer::{RendererOptions};
 
 pub type DpiFactor = f64;
 
@@ -7,6 +7,7 @@ pub type DpiFactor = f64;
 pub struct GameResolution {
     pub width: f64,
     pub height: f64,
+    pub dpi: f64,
 }
 
 // Platform store an object trait (window mostly).
@@ -18,7 +19,6 @@ pub struct Platform {
 /// Generic layer for custom platforms.
 pub trait PlatformWrapper {
     fn get_dimension(&self) -> GameResolution;
-    fn get_dpi_factor(&self) -> DpiFactor;
     fn should_close(&self) -> bool;
     // TODO: Why reference of closure here?
     fn on_resize(&self, callback: &mut dyn FnMut(GameResolution));
@@ -38,13 +38,6 @@ impl Platform {
     /// Get mutable ref of the inner platform.
     pub fn get_mut(&mut self) -> &mut dyn PlatformWrapper {
         &mut *self.inner_value
-    }
-}
-
-impl<'p, 't> From<&'p Platform> for Renderer {
-    fn from(platform: &'p Platform) -> Self {
-        let options = platform.get().load_opengl();
-        Self::new(options)
     }
 }
 
