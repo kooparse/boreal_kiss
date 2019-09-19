@@ -157,6 +157,12 @@ pub fn generate_texture() -> TexId {
     }
 }
 
+pub fn bind_texture(tex_id: TexId) {
+    unsafe {
+        gl::BindTexture(gl::TEXTURE_2D, tex_id);
+    }
+}
+
 pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     let dim = &tex.dim;
     let data = &tex.raw;
@@ -164,7 +170,7 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     let tex_id = generate_texture();
 
     use_vao(vao);
-    gl::BindTexture(gl::TEXTURE_2D, tex_id);
+    bind_texture(tex_id);
 
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);

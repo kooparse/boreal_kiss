@@ -1,4 +1,4 @@
-use super::{Mesh, ShaderType, Texture, Vertex};
+use super::{DrawType, Mesh, ShaderType, Texture, Vertex};
 use nalgebra_glm as glm;
 
 /// Create a renderable triangle object, ready
@@ -35,5 +35,27 @@ pub fn create_triangle_object<'t, 'n>(
         position,
         texture: Some(tex),
         shader_type: ShaderType::SimpleTextureShader,
+        draw_type: DrawType::Triangles,
+    }
+}
+
+pub fn create_line<'n>(
+    name: &'n str,
+    position: glm::TVec3<f32>,
+) -> Mesh<'_, 'n> {
+    let vertex = Vertex {
+        primitives: vec![glm::vec3(0., 0., -3.), glm::vec3(0., 0., 3.)],
+        normals: vec![],
+        uv_coords: vec![],
+        indices: vec![],
+    };
+
+    Mesh {
+        name,
+        vertex,
+        position,
+        texture: None,
+        shader_type: ShaderType::SimpleShader,
+        draw_type: DrawType::Lines,
     }
 }

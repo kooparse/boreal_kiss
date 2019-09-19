@@ -21,6 +21,13 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 #[derive(Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
+#[derive(Copy, Clone)]
+pub enum DrawType {
+    Triangles,
+    Lines,
+    Points,
+}
+
 #[derive(Default)]
 pub struct RendererOptions {
     with_multisampling: bool,
@@ -57,6 +64,7 @@ struct LoadedObject {
     name: String,
     is_hidden: bool,
     position: Vector3,
+    draw_type: DrawType,
     gpu_bound: GpuBound,
 }
 
@@ -87,6 +95,7 @@ pub struct Mesh<'t, 'n> {
     pub texture: Option<Texture<'t>>,
     pub shader_type: ShaderType,
     pub position: glm::TVec3<f32>,
+    pub draw_type: DrawType,
 }
 
 impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
@@ -110,6 +119,7 @@ impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
         LoadedObject {
             name: object.name.to_string(),
             is_hidden: false,
+            draw_type: object.draw_type,
             position: object.position,
             gpu_bound,
         }
@@ -249,25 +259,39 @@ impl<'r> Renderer<'r> {
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
 
-            unsafe {
-                if let Some(texture) = gpu_bound.texture_id {
-                    gl::BindTexture(gl::TEXTURE_2D, texture);
-                }
+            if let Some(tex_id) = gpu_bound.texture_id {
+                opengl::bind_texture(tex_id);
+            }
 
-                if let Some(ebo) = gpu_bound.ebo {
-                    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-                    gl::DrawElements(
-                        gl::TRIANGLES,
-                        gpu_bound.primitives_len as i32,
-                        gl::UNSIGNED_INT,
-                        ptr::null(),
-                    );
-                } else {
-                    gl::DrawArrays(
-                        gl::TRIANGLES,
-                        0,
-                        gpu_bound.primitives_len as i32,
-                    );
+            unsafe {
+                match obj.draw_type {
+                    DrawType::Triangles => {
+                        if let Some(ebo) = gpu_bound.ebo {
+                            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+                            gl::DrawElements(
+                                gl::TRIANGLES,
+                                gpu_bound.primitives_len as i32,
+                                gl::UNSIGNED_INT,
+                                ptr::null(),
+                            );
+                        } else {
+                            gl::DrawArrays(
+                                gl::TRIANGLES,
+                                0,
+                                gpu_bound.primitives_len as i32,
+                            );
+                        }
+                    }
+
+                    DrawType::Lines => {
+                        gl::DrawArrays(
+                            gl::LINES,
+                            0,
+                            gpu_bound.primitives_len as i32,
+                        );
+                    }
+
+                    _ => unimplemented!(),
                 }
             }
         }

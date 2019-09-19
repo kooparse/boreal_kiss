@@ -55,6 +55,7 @@ fn main() {
             glm::vec3(-1., 0., 0.),
             0.4,
         ),
+        primitives::create_line("line_1", glm::vec3(0., 0., 0.)),
     ]);
 
     // Get mutable ref of the inner platform,
@@ -79,7 +80,36 @@ fn main() {
             );
         });
 
-        input.pressed_once(Key::A, || renderer.toggle_mesh(_ids[0]));
+        input.pressed_once(Key::W, || {
+            let mut render_state = state.render_state.borrow_mut();
+            render_state.view =
+                glm::translate(&render_state.view, &glm::vec3(0., 0.2, 0.));
+        });
+
+        input.pressed_once(Key::S, || {
+            let mut render_state = state.render_state.borrow_mut();
+            render_state.view =
+                glm::translate(&render_state.view, &glm::vec3(0., -0.2, 0.));
+        });
+
+        input.pressed_once(Key::D, || {
+            let mut render_state = state.render_state.borrow_mut();
+            render_state.view =
+                glm::translate(&render_state.view, &glm::vec3(-0.2, 0., 0.));
+        });
+
+        input.pressed_once(Key::A, || {
+            let mut render_state = state.render_state.borrow_mut();
+            render_state.view =
+                glm::translate(&render_state.view, &glm::vec3(0.2, 0., 0.));
+        });
+
+        input.pressed_once(Key::X, || {
+            let mut render_state = state.render_state.borrow_mut();
+            render_state.view =
+                glm::translate(&render_state.view, &glm::vec3(0., 0., -0.2));
+        });
+
         input.clicked(MouseButton::Left, |c_pos| {
             dbg!(c_pos);
         });
