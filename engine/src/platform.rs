@@ -20,6 +20,7 @@ pub struct Platform {
 pub trait PlatformWrapper {
     fn get_dimension(&self) -> GameResolution;
     fn should_close(&self) -> bool;
+    fn hide_cursor(&self, is_hide: bool);
     // TODO: Why reference of closure here?
     fn on_resize(&self, callback: &mut dyn FnMut(GameResolution));
     fn swap_buffers(&self);

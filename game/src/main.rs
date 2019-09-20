@@ -35,12 +35,9 @@ fn main() {
 
     let mut game_loop = GameLoop::new();
     let mut platform = Platform::from(platform_wrapper);
-    let state = GameState::default();
-
-    let mut renderer =
-        Renderer::new(platform.get().load_opengl(), &state.render_state);
-
     let mut input = Input::new();
+    let mut state = GameState::default();
+    let mut renderer = Renderer::new(platform.get().load_opengl());
 
     let _ids = renderer.add_meshes(vec![
         primitives::create_triangle_object(
@@ -62,17 +59,12 @@ fn main() {
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
 
-    game_loop.start(|_time, _fps| {
+    game_loop.start(|time, _fps| {
         window.update_inputs(&mut input);
 
-        renderer.clear_screen();
-        renderer.draw();
-
         window.on_resize(&mut |res| {
-            let mut render_state = state.render_state.borrow_mut();
-
             renderer.update_viewport(res.width, res.height, res.dpi);
-            render_state.projection = glm::perspective(
+            state.render_state.projection = glm::perspective(
                 (res.width / res.height) as f32,
                 45.0,
                 0.1,
@@ -80,39 +72,14 @@ fn main() {
             );
         });
 
-        input.pressed_once(Key::W, || {
-            let mut render_state = state.render_state.borrow_mut();
-            render_state.view =
-                glm::translate(&render_state.view, &glm::vec3(0., 0.2, 0.));
-        });
-
-        input.pressed_once(Key::S, || {
-            let mut render_state = state.render_state.borrow_mut();
-            render_state.view =
-                glm::translate(&render_state.view, &glm::vec3(0., -0.2, 0.));
-        });
-
-        input.pressed_once(Key::D, || {
-            let mut render_state = state.render_state.borrow_mut();
-            render_state.view =
-                glm::translate(&render_state.view, &glm::vec3(-0.2, 0., 0.));
-        });
-
-        input.pressed_once(Key::A, || {
-            let mut render_state = state.render_state.borrow_mut();
-            render_state.view =
-                glm::translate(&render_state.view, &glm::vec3(0.2, 0., 0.));
-        });
-
-        input.pressed_once(Key::X, || {
-            let mut render_state = state.render_state.borrow_mut();
-            render_state.view =
-                glm::translate(&render_state.view, &glm::vec3(0., 0., -0.2));
-        });
+        state.move_camera(&mut input, window, time);
 
         input.clicked(MouseButton::Left, |c_pos| {
             dbg!(c_pos);
         });
+
+        renderer.clear_screen();
+        renderer.draw(&state.render_state);
 
         window.swap_buffers();
         window.should_close() || input.is_pressed(Key::Esc)

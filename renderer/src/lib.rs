@@ -137,20 +137,16 @@ impl RenderState {
     }
 }
 
-pub struct Renderer<'r> {
+pub struct Renderer {
     options: RendererOptions,
     object_storage: HashMap<LoadedObjectId, LoadedObject>,
     shader_manager: ShaderManager,
-    state: &'r RefCell<RenderState>,
 }
 
-impl<'r> Renderer<'r> {
+impl Renderer {
     /// Create, compile and generate vertex array objects (vao) for our
     /// renderer.
-    pub fn new(
-        options: RendererOptions,
-        state: &'r RefCell<RenderState>,
-    ) -> Self {
+    pub fn new(options: RendererOptions) -> Self {
         // Panic if opengl functions not loaded.
         opengl::get_opengl_loaded();
 
@@ -163,7 +159,6 @@ impl<'r> Renderer<'r> {
 
         Self {
             options,
-            state,
             object_storage: HashMap::new(),
             shader_manager,
         }
@@ -226,13 +221,12 @@ impl<'r> Renderer<'r> {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, state: &RenderState) {
         for obj in self.object_storage.values() {
             if obj.is_hidden {
                 continue;
             }
 
-            let state = self.state.borrow();
             let gpu_bound = &obj.gpu_bound;
             let program = &self.shader_manager.list[&gpu_bound.shader];
 
@@ -254,7 +248,7 @@ impl<'r> Renderer<'r> {
             opengl::use_vao(gpu_bound.vao);
 
             let mut model = glm::Mat4::identity();
-            model = glm::rotate(&model, -45.0, &glm::vec3(1.0, 0.0, 0.0));
+            // model = glm::rotate(&model, -55.0, &glm::vec3(1.0, 0.0, 0.0));
             model = glm::translate(&model, &obj.position);
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
@@ -313,7 +307,7 @@ impl<'r> Renderer<'r> {
     }
 }
 
-impl<'r> Drop for Renderer<'r> {
+impl Drop for Renderer {
     fn drop(&mut self) {
         self.flush();
     }

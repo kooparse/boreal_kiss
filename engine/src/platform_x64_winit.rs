@@ -89,6 +89,16 @@ impl PlatformWrapper for WinitPlatform {
         self.should_close
     }
 
+    /// Hide and Grab the cursor.
+    fn hide_cursor(&self, is_hide: bool) {
+        self.context
+            .window()
+            .grab_cursor(is_hide)
+            .expect("Error when grabbing the cursor");
+
+        self.context.window().hide_cursor(is_hide);
+    }
+
     fn load_opengl(&self) -> RendererOptions {
         let pixel_format = self.context.get_pixel_format();
 

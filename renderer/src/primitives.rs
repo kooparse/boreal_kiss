@@ -14,17 +14,17 @@ pub fn create_triangle_object<'t, 'n>(
 
     let vertex = Vertex {
         primitives: vec![
-            glm::vec3(-scale, -scale, 0.0),
-            glm::vec3(-scale, scale, 0.0),
-            glm::vec3(scale, scale, 0.0),
-            glm::vec3(scale, -scale, 0.0),
+            glm::vec3(-scale, 0., -scale),
+            glm::vec3(-scale, 0., scale),
+            glm::vec3(scale, 0., scale),
+            glm::vec3(scale, 0., -scale),
         ],
         normals: vec![],
         uv_coords: vec![
             glm::vec3(0.0, 0.0, 0.0),
             glm::vec3(1.0, 0.0, 0.0),
-            glm::vec3(1.0, 1.1, 0.0),
-            glm::vec3(0.0, 1.0, 0.0),
+            glm::vec3(1.0, 0.0, 1.0),
+            glm::vec3(0.0, 0.0, 1.0),
         ],
         indices: vec![0, 1, 2, 0, 2, 3],
     };
@@ -44,7 +44,10 @@ pub fn create_line<'n>(
     position: glm::TVec3<f32>,
 ) -> Mesh<'_, 'n> {
     let vertex = Vertex {
-        primitives: vec![glm::vec3(0., 0., -3.), glm::vec3(0., 0., 3.)],
+        primitives: vec![
+            glm::vec3(0., 0., 3.),
+            glm::vec3(0., 0., -10.),
+        ],
         normals: vec![],
         uv_coords: vec![],
         indices: vec![],

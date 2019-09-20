@@ -6,7 +6,7 @@ pub struct Input {
     keyboard: HashMap<Key, KeyState>,
     mouse: HashMap<MouseButton, KeyState>,
     pub cursor: Cursor,
-    modifiers: Modifier,
+    pub modifiers: Modifier,
 }
 impl Input {
     pub fn new() -> Self {
@@ -77,6 +77,12 @@ impl Input {
     /// Set modifier.
     pub fn set_modifier(&mut self, modifier: Modifier) {
         self.modifiers = modifier;
+    }
+
+    pub fn pressed(&mut self, keycode: Key, mut callback: impl FnMut()) {
+        if self.is_pressed(keycode) {
+            callback();
+        }
     }
 
     /// Will call only once the closure when the given closure is pressed.

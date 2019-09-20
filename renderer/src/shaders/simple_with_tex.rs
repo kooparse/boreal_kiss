@@ -27,7 +27,7 @@ pub const FRAGMENT_SOURCE: &str = r#"
     uniform sampler2D tex_sample;
 
     void main() {
-       	FragColor = texture(tex_sample, TexCoord.xy);
+       	FragColor = texture(tex_sample, TexCoord.xz);
     }
 "#;
 
