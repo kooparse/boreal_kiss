@@ -4,14 +4,14 @@
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
 use crate::input::{Cursor, Input, Key, Modifier, MouseButton};
-use crate::platform::{GameResolution, Platform, PlatformWrapper};
+use crate::platform::{Platform, PlatformWrapper};
 use gl;
 use glutin::{
     dpi, Api, ContextBuilder, ContextWrapper, DeviceEvent, ElementState, Event,
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{Color, RendererOptions};
+use renderer::{Color, GameResolution, RendererOptions};
 use std::convert::From;
 
 /// Construct a window for all desktop with the

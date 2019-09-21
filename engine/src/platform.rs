@@ -1,14 +1,7 @@
 use super::input::Input;
-use renderer::{RendererOptions};
+use renderer::{GameResolution, RendererOptions};
 
 pub type DpiFactor = f64;
-
-#[derive(Debug)]
-pub struct GameResolution {
-    pub width: f64,
-    pub height: f64,
-    pub dpi: f64,
-}
 
 // Platform store an object trait (window mostly).
 // and different context associated with it.

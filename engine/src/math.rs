@@ -87,9 +87,9 @@ impl<N: GenericNumber> Mat4<N> {
     pub fn indentity() -> Mat4<f32> {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let inner: [f32; 16] = [
-            1., 0., 0., 0., 
-            0., 1., 0., 0., 
-            0., 0., 1., 0., 
+            1., 0., 0., 0.,
+            0., 1., 0., 0.,
+            0., 0., 1., 0.,
             0., 0., 0., 1.,
         ];
 

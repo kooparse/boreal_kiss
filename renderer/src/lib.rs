@@ -7,7 +7,6 @@ mod vertex;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use shaders::{ShaderManager, ShaderType};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
@@ -21,11 +20,38 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 #[derive(Default)]
 pub struct Color(pub f32, pub f32, pub f32, pub f32);
 
-#[derive(Copy, Clone)]
+#[derive(Debug)]
+pub struct GameResolution {
+    pub width: f64,
+    pub height: f64,
+    pub dpi: f64,
+}
+
+#[derive(Copy, Clone, PartialEq)]
 pub enum DrawType {
     Triangles,
     Lines,
     Points,
+}
+
+pub struct Ray {
+    origin: glm::TVec3<f32>,
+    direction: glm::TVec3<f32>,
+    length: f32,
+}
+
+impl Ray {
+    pub fn new(
+        origin: glm::TVec3<f32>,
+        direction: glm::TVec3<f32>,
+        length: f32,
+    ) -> Self {
+        Self {
+            origin,
+            direction,
+            length,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -127,13 +153,22 @@ impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
 }
 
 pub struct RenderState {
+    pub resolution: GameResolution,
     pub projection: glm::TMat4<f32>,
     pub view: glm::TMat4<f32>,
 }
 
 impl RenderState {
-    pub fn new(projection: glm::TMat4<f32>, view: glm::TMat4<f32>) -> Self {
-        Self { projection, view }
+    pub fn new(
+        projection: glm::TMat4<f32>,
+        view: glm::TMat4<f32>,
+        resolution: GameResolution,
+    ) -> Self {
+        Self {
+            projection,
+            view,
+            resolution,
+        }
     }
 }
 
@@ -166,7 +201,7 @@ impl Renderer {
 
     /// TODO: Fix this function. The ratio isn't good. We should correct
     /// the aspect ratio on resize. It currently zoom in the matrix.
-    pub fn update_viewport(&mut self, _width: f64, _height: f64, _dpi: f64) {
+    pub fn update_viewport(&mut self, _resolution: &GameResolution) {
         // opengl::set_viewport(
         //     (width * dpi) as i32,
         //     (height * dpi) as i32,
@@ -221,6 +256,17 @@ impl Renderer {
         }
     }
 
+    pub fn add_ray(
+        &mut self,
+        origin: glm::TVec3<f32>,
+        direction: glm::TVec3<f32>,
+        length: f32,
+    ) {
+        let ray = Ray::new(origin, direction, length);
+        let name = format!("ray: {}", direction);
+        self.add_mesh(primitives::create_line(&name, ray));
+    }
+
     pub fn draw(&mut self, state: &RenderState) {
         for obj in self.object_storage.values() {
             if obj.is_hidden {
@@ -248,8 +294,10 @@ impl Renderer {
             opengl::use_vao(gpu_bound.vao);
 
             let mut model = glm::Mat4::identity();
-            // model = glm::rotate(&model, -55.0, &glm::vec3(1.0, 0.0, 0.0));
-            model = glm::translate(&model, &obj.position);
+            // TODO: This should be store in the obj.
+            if obj.draw_type != DrawType::Lines {
+                model = glm::translate(&model, &obj.position);
+            }
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
 

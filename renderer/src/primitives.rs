@@ -1,3 +1,4 @@
+use super::Ray;
 use super::{DrawType, Mesh, ShaderType, Texture, Vertex};
 use nalgebra_glm as glm;
 
@@ -39,15 +40,9 @@ pub fn create_triangle_object<'t, 'n>(
     }
 }
 
-pub fn create_line<'n>(
-    name: &'n str,
-    position: glm::TVec3<f32>,
-) -> Mesh<'_, 'n> {
+pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'_, 'n> {
     let vertex = Vertex {
-        primitives: vec![
-            glm::vec3(0., 0., 3.),
-            glm::vec3(0., 0., -10.),
-        ],
+        primitives: vec![ray.origin, ray.direction * ray.length],
         normals: vec![],
         uv_coords: vec![],
         indices: vec![],
@@ -56,7 +51,7 @@ pub fn create_line<'n>(
     Mesh {
         name,
         vertex,
-        position,
+        position: ray.origin,
         texture: None,
         shader_type: ShaderType::SimpleShader,
         draw_type: DrawType::Lines,

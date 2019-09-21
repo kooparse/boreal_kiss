@@ -39,21 +39,12 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
-    let _ids = renderer.add_meshes(vec![
-        primitives::create_triangle_object(
-            "plane_1",
-            "game/assets/textures/pos_debug.png",
-            glm::vec3(1., 0.0, 0.0),
-            1.0,
-        ),
-        primitives::create_triangle_object(
-            "plane_2",
-            "game/assets/textures/grid_debug.png",
-            glm::vec3(-1., 0., 0.),
-            0.4,
-        ),
-        primitives::create_line("line_1", glm::vec3(0., 0., 0.)),
-    ]);
+    let _ids = renderer.add_meshes(vec![primitives::create_triangle_object(
+        "plane_1",
+        "game/assets/textures/pos_debug.png",
+        glm::vec3(0., 0.0, 0.0),
+        1.0,
+    )]);
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
@@ -63,7 +54,7 @@ fn main() {
         window.update_inputs(&mut input);
 
         window.on_resize(&mut |res| {
-            renderer.update_viewport(res.width, res.height, res.dpi);
+            renderer.update_viewport(&res);
             state.render_state.projection = glm::perspective(
                 (res.width / res.height) as f32,
                 45.0,
@@ -74,8 +65,9 @@ fn main() {
 
         state.move_camera(&mut input, window, time);
 
-        input.clicked(MouseButton::Left, |c_pos| {
-            dbg!(c_pos);
+        input.clicked(MouseButton::Left, |cursor| {
+            let (origin, direction) = state.cast_ray(cursor);
+            renderer.add_ray(origin, direction, 100f32);
         });
 
         renderer.clear_screen();

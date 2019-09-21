@@ -1,5 +1,7 @@
-use crate::input::{Input, Key};
-use crate::time::Time;
+use crate::{
+    input::{Input, Key},
+    time::Time,
+};
 use nalgebra_glm as glm;
 use std::default::Default;
 
