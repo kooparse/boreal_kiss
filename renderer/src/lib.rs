@@ -3,6 +3,7 @@ pub mod primitives;
 mod shaders;
 mod texture;
 mod vertex;
+mod ray;
 
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
@@ -11,6 +12,7 @@ use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
 use vertex::{Vector3, Vertex};
+use ray::Ray;
 
 type LoadedObjectId = u64;
 static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
@@ -32,26 +34,6 @@ pub enum DrawType {
     Triangles,
     Lines,
     Points,
-}
-
-pub struct Ray {
-    origin: glm::TVec3<f32>,
-    direction: glm::TVec3<f32>,
-    length: f32,
-}
-
-impl Ray {
-    pub fn new(
-        origin: glm::TVec3<f32>,
-        direction: glm::TVec3<f32>,
-        length: f32,
-    ) -> Self {
-        Self {
-            origin,
-            direction,
-            length,
-        }
-    }
 }
 
 #[derive(Default)]

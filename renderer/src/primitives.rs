@@ -1,4 +1,5 @@
-use super::{DrawType, Mesh, Ray};
+use super::{DrawType, Mesh};
+use crate::ray::Ray;
 use crate::shaders::ShaderType;
 use crate::texture::Texture;
 use crate::vertex::Vertex;
