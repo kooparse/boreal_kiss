@@ -1,5 +1,7 @@
-use super::Ray;
-use super::{DrawType, Mesh, ShaderType, Texture, Vertex};
+use super::{DrawType, Mesh, Ray};
+use crate::shaders::ShaderType;
+use crate::texture::Texture;
+use crate::vertex::Vertex;
 use nalgebra_glm as glm;
 
 /// Create a renderable triangle object, ready
@@ -51,7 +53,7 @@ pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'_, 'n> {
     Mesh {
         name,
         vertex,
-        position: ray.origin,
+        position: glm::vec3(0.0, 0.0, 0.0),
         texture: None,
         shader_type: ShaderType::SimpleShader,
         draw_type: DrawType::Lines,

@@ -293,11 +293,9 @@ impl Renderer {
 
             opengl::use_vao(gpu_bound.vao);
 
+            // TODO: This should be (maybe) stored in the object.
             let mut model = glm::Mat4::identity();
-            // TODO: This should be store in the obj.
-            if obj.draw_type != DrawType::Lines {
-                model = glm::translate(&model, &obj.position);
-            }
+            model = glm::translate(&model, &obj.position);
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
 
