@@ -1,36 +1,35 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Sub};
 
-// Because we can't alias traits yet.
-pub trait GenericNumber:
-    Add<Output = Self>
-    + Sub<Output = Self>
-    + Mul<Output = Self>
-    + Div<Output = Self>
-    + Clone
-    + Copy
-    + Sized
-{
-    // Nothing here... it's an "alias".
+trait RealNumber {}
+
+#[derive(Debug, PartialEq)]
+pub struct Vec3 {
+    x: f32,
+    y: f32,
+    z: f32,
 }
 
-impl GenericNumber for f64 {}
-impl GenericNumber for f32 {}
-impl GenericNumber for i32 {}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Vector3<N: GenericNumber> {
-    x: N,
-    y: N,
-    z: N,
-}
-
-impl<N: GenericNumber> Vector3<N> {
-    pub fn new(x: N, y: N, z: N) -> Self {
+impl Vec3 {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn length(&self) -> f32 {
+        f32::sqrt(self.x.powf(2.) + (self.y.powf(2.)) + self.z.powf(2.))
+    }
+
+    pub fn normalize(&self) -> Vec3 {
+        let vector_length = self.length();
+
+        Vec3::new(
+            self.x / vector_length,
+            self.y / vector_length,
+            self.z / vector_length,
+        )
     }
 }
 
-impl<N: GenericNumber> Add for Vector3<N> {
+impl Add for Vec3 {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -42,7 +41,7 @@ impl<N: GenericNumber> Add for Vector3<N> {
     }
 }
 
-impl<N: GenericNumber> Sub for Vector3<N> {
+impl Sub for Vec3 {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -54,37 +53,13 @@ impl<N: GenericNumber> Sub for Vector3<N> {
     }
 }
 
-impl<N: GenericNumber> Mul for Vector3<N> {
-    type Output = Self;
-
-    fn mul(self, other: Self) -> Self::Output {
-        Self::Output {
-            x: self.x * other.x,
-            y: self.y * other.y,
-            z: self.z * other.z,
-        }
-    }
-}
-
-impl<N: GenericNumber> Div for Vector3<N> {
-    type Output = Self;
-
-    fn div(self, other: Self) -> Self::Output {
-        Self::Output {
-            x: self.x / other.x,
-            y: self.y / other.y,
-            z: self.z / other.z,
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
-pub struct Mat4<N: GenericNumber> {
-    inner: [N; 16],
+pub struct Mat4 {
+    inner: [f32; 16],
 }
 
-impl<N: GenericNumber> Mat4<N> {
-    pub fn indentity() -> Mat4<f32> {
+impl Mat4 {
+    pub fn indentity() -> Mat4 {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let inner: [f32; 16] = [
             1., 0., 0., 0.,
@@ -93,7 +68,7 @@ impl<N: GenericNumber> Mat4<N> {
             0., 0., 0., 1.,
         ];
 
-        Mat4::<f32> { inner }
+        Mat4 { inner }
     }
 }
 
@@ -102,27 +77,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn add_vec3() {
-        let a = Vector3::new(1, 2, 3);
-        let b = Vector3::new(4, 5, 6);
+    fn new_vec3() {
+        let a = Vec3::new(1., 2., 3.);
+        assert_eq!(a, Vec3::new(1., 2., 3.));
+    }
 
-        assert_eq!(a + b, Vector3::new(5, 7, 9));
+    #[test]
+    fn add_vec3() {
+        // For float numbers...
+        let a = Vec3::new(1., 2., 3.);
+        let b = Vec3::new(4., 5., 6.);
+
+        assert_eq!(a + b, Vec3::new(5., 7., 9.));
     }
 
     #[test]
     fn sub_vec3() {
-        let a = Vector3::new(1, 2, 3);
-        let b = Vector3::new(4, 5, 6);
+        let a = Vec3::new(1., 2., 3.);
+        let b = Vec3::new(4., 5., 6.);
 
-        assert_eq!(a - b, Vector3::new(-3, -3, -3));
+        assert_eq!(a - b, Vec3::new(-3., -3., -3.));
     }
 
     #[test]
-    fn mul_vec3() {
-        let a = Vector3::new(1, 2, 3);
-        let b = Vector3::new(4, 5, 6);
+    fn length() {
+        let a = Vec3::new(4., 8., 36.);
 
-        assert_eq!(a * b, Vector3::new(4, 10, 18));
+        assert_eq!(a.length().round(), 37.);
+    }
+
+    #[test]
+    fn normalize() {
+        let a = Vec3::new(4., 8., 36.);
+
+        // The length of a vector normalized is always 1.
+        // TODO: I shouldn't have to round this number...
+        assert_eq!(a.normalize().length().round(), 1.);
     }
 
 }

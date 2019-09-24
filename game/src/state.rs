@@ -28,7 +28,7 @@ impl GameState {
         }
     }
 
-    // TODO: Remove this function to the "state".
+    // TODO: Remove this function from the "state".
     pub fn cast_ray(
         &self,
         cursor: &Cursor,

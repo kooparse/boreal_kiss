@@ -1,18 +1,18 @@
 mod opengl;
 pub mod primitives;
+mod ray;
 mod shaders;
 mod texture;
 mod vertex;
-mod ray;
 
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
+use ray::Ray;
 use shaders::{ShaderManager, ShaderType};
 use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
 use vertex::{Vector3, Vertex};
-use ray::Ray;
 
 type LoadedObjectId = u64;
 static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
