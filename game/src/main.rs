@@ -50,7 +50,7 @@ fn main() {
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
 
-    game_loop.start(|time, _fps| {
+    game_loop.start(|time| {
         window.update_inputs(&mut input);
 
         window.on_resize(&mut |res| {
