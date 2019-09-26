@@ -97,17 +97,17 @@ impl Drop for LoadedObject {
     }
 }
 
-pub struct Mesh<'t, 'n> {
+pub struct Mesh<'n> {
     pub name: &'n str,
     pub vertex: Vertex,
-    pub texture: Option<Texture<'t>>,
+    pub texture: Option<Texture>,
     pub shader_type: ShaderType,
     pub position: glm::TVec3<f32>,
     pub draw_type: DrawType,
 }
 
-impl<'t, 'n> From<&Mesh<'t, 'n>> for LoadedObject {
-    fn from(object: &Mesh<'t, 'n>) -> LoadedObject {
+impl<'n> From<&Mesh<'n>> for LoadedObject {
+    fn from(object: &Mesh<'n>) -> LoadedObject {
         // From system memmory to gpu memory.
         let (vao, vbo, ebo, texture_id) = opengl::load_object_to_gpu(&object);
 

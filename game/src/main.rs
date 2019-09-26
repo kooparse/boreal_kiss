@@ -39,12 +39,19 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
-    let _ids = renderer.add_meshes(vec![primitives::create_triangle_object(
-        "plane_1",
-        "game/assets/textures/pos_debug.png",
-        glm::vec3(0., 0.0, 0.0),
-        1.0,
-    )]);
+    let _ids = renderer.add_meshes(vec![
+        primitives::create_plane(
+            "plane_1",
+            "game/assets/textures/pos_debug.png",
+            glm::vec3(0., 0.0, 0.0),
+            1.0,
+        ),
+        primitives::load_mesh(
+            "game/assets/models/cube/Cube.gltf",
+            glm::vec3(2., 0.0, 0.0),
+            0.7,
+        ),
+    ]);
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.

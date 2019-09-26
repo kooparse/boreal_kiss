@@ -4,13 +4,13 @@ pub const VERTEX_SOURCE: &str = r#"
     #version 330 core
 
     layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aTexCoord;
+    layout (location = 1) in vec2 aTexCoord;
 
     uniform mat4 model;
     uniform mat4 view;
     uniform mat4 projection;
 
-    out vec3 TexCoord;
+    out vec2 TexCoord;
 
     void main() {
        	gl_Position = projection * view * model * vec4(aPos.xyz, 1.0);
@@ -21,13 +21,13 @@ pub const VERTEX_SOURCE: &str = r#"
 pub const FRAGMENT_SOURCE: &str = r#"
     #version 330 core
 
-    in vec3 TexCoord;
+    in vec2 TexCoord;
     out vec4 FragColor;
 
     uniform sampler2D tex_sample;
 
     void main() {
-       	FragColor = texture(tex_sample, TexCoord.xz);
+       	FragColor = texture(tex_sample, TexCoord);
     }
 "#;
 

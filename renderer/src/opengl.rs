@@ -1,6 +1,6 @@
 use super::shaders::{ShaderProgramId, ShaderType};
 use super::texture::Texture;
-use super::vertex::Vector3;
+use super::vertex::{Vector3, UV};
 use super::{Color, Mesh};
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
@@ -94,7 +94,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
         object.vertex.primitives.len() * mem::size_of::<Vector3>();
 
     if object.texture.is_some() {
-        total_size += object.vertex.uv_coords.len() * mem::size_of::<Vector3>();
+        total_size += object.vertex.uv_coords.len() * mem::size_of::<UV>();
     }
 
     unsafe {
@@ -126,8 +126,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
                 gl::ARRAY_BUFFER,
                 (object.vertex.primitives.len() * mem::size_of::<Vector3>())
                     as isize,
-                (object.vertex.uv_coords.len() * mem::size_of::<Vector3>())
-                    as isize,
+                (object.vertex.uv_coords.len() * mem::size_of::<UV>()) as isize,
                 object.vertex.uv_coords.as_ptr() as *const _,
             );
         }
@@ -244,11 +243,12 @@ pub fn load_object_to_gpu(
 
                 gl::VertexAttribPointer(
                     1,
-                    3,
+                    2,
                     gl::FLOAT,
                     gl::FALSE,
-                    mem::size_of::<Vector3>() as i32,
-                    ptr::null(),
+                    mem::size_of::<UV>() as i32,
+                    (object.vertex.primitives.len() * mem::size_of::<Vector3>())
+                        as *const _,
                 );
                 gl::EnableVertexAttribArray(1);
             }
