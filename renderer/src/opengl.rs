@@ -1,7 +1,7 @@
 use super::shaders::{ShaderProgramId, ShaderType};
 use super::texture::Texture;
-use super::vertex::{Vector3, UV};
-use super::{Color, Mesh};
+use super::vertex::{Color, Vector3, UV};
+use super::{Mesh, Rgba};
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
@@ -57,7 +57,7 @@ pub fn set_depth_testing(enabled: bool) {
     }
 }
 
-pub fn clear(color: &Color) {
+pub fn clear(color: &Rgba) {
     unsafe {
         gl::ClearColor(color.0, color.1, color.2, color.3);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -97,6 +97,10 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
         total_size += object.vertex.uv_coords.len() * mem::size_of::<UV>();
     }
 
+    if !object.vertex.colors.is_empty() {
+        total_size += object.vertex.colors.len() * mem::size_of::<Color>();
+    }
+
     unsafe {
         use_vao(vao);
         let vbo = gen_buffer();
@@ -111,24 +115,45 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
             gl::STATIC_DRAW,
         );
 
+        let mut data_cursor = 0;
+
         // Position data.
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
-            0,
+            data_cursor,
             (object.vertex.primitives.len() * mem::size_of::<Vector3>())
                 as isize,
             object.vertex.primitives.as_ptr() as *const _,
         );
 
+        data_cursor = (object.vertex.primitives.len()
+            * mem::size_of::<Vector3>()) as isize;
+
+        if !object.vertex.colors.is_empty() {
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                data_cursor,
+                (object.vertex.colors.len() * mem::size_of::<Color>()) as isize,
+                object.vertex.colors.as_ptr() as *const _,
+            );
+
+            data_cursor = data_cursor
+                * (object.vertex.colors.len() * mem::size_of::<Color>())
+                    as isize;
+        }
+
         // Texture data.
         if object.texture.is_some() {
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
-                (object.vertex.primitives.len() * mem::size_of::<Vector3>())
-                    as isize,
+                data_cursor,
                 (object.vertex.uv_coords.len() * mem::size_of::<UV>()) as isize,
                 object.vertex.uv_coords.as_ptr() as *const _,
             );
+
+            // data_cursor = data_cursor
+            //     * (object.vertex.uv_coords.len() * mem::size_of::<UV>())
+            //         as isize;
         }
 
         // Create EBO if indices is not empty.
@@ -228,6 +253,17 @@ pub fn load_object_to_gpu(
                     ptr::null(),
                 );
                 gl::EnableVertexAttribArray(0);
+
+                gl::VertexAttribPointer(
+                    1,
+                    4,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    mem::size_of::<Color>() as i32,
+                    (object.vertex.primitives.len() * mem::size_of::<Vector3>())
+                        as *const _,
+                );
+                gl::EnableVertexAttribArray(1);
             }
 
             ShaderType::SimpleTextureShader => {

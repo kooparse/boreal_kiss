@@ -2,7 +2,7 @@ use super::{DrawMode, Mesh};
 use crate::ray::Ray;
 use crate::shaders::ShaderType;
 use crate::texture::Texture;
-use crate::vertex::Vertex;
+use crate::vertex::{Color, Vertex};
 use gltf;
 use nalgebra_glm as glm;
 
@@ -27,7 +27,6 @@ pub fn create_plane<'t, 'n>(
             glm::vec3(scale, 0., scale),
             glm::vec3(scale, 0., -scale),
         ],
-        normals: vec![],
         uv_coords: vec![
             glm::vec2(0.0, 0.0),
             glm::vec2(1.0, 0.0),
@@ -35,6 +34,7 @@ pub fn create_plane<'t, 'n>(
             glm::vec2(0.0, 1.0),
         ],
         indices: vec![0, 1, 2, 0, 2, 3],
+        ..Default::default()
     };
 
     let shader_type = texture.as_ref().map_or(ShaderType::SimpleShader, |_| {
@@ -84,6 +84,17 @@ pub fn load_mesh<'n>(
                     .collect::<_>()
             };
 
+            vertex.colors = {
+                reader.read_colors(0).map_or(vec![], |read_colors| {
+                    read_colors
+                        .into_rgba_f32()
+                        .map(|color| {
+                            glm::vec4(color[0], color[1], color[2], color[3])
+                        })
+                        .collect::<_>()
+                })
+            };
+
             vertex.indices = {
                 reader.read_indices().map_or(vec![], |read_indices| {
                     read_indices.into_u32().collect::<Vec<u32>>()
@@ -101,12 +112,21 @@ pub fn load_mesh<'n>(
         })
     });
 
+    let (texture, shader_type) = if !loaded_textures.is_empty() {
+        (
+            Some(loaded_textures.remove(0)),
+            ShaderType::SimpleTextureShader,
+        )
+    } else {
+        (None, ShaderType::SimpleShader)
+    };
+
     Mesh {
         name: path,
         vertex: vertices.remove(0),
         world_pos,
-        texture: Some(loaded_textures.remove(0)),
-        shader_type: ShaderType::SimpleTextureShader,
+        texture,
+        shader_type,
         mode: DrawMode::Triangles,
     }
 }
@@ -114,9 +134,7 @@ pub fn load_mesh<'n>(
 pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'n> {
     let vertex = Vertex {
         primitives: vec![ray.origin, ray.direction * ray.length],
-        normals: vec![],
-        uv_coords: vec![],
-        indices: vec![],
+        ..Default::default()
     };
 
     Mesh {

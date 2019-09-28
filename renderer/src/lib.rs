@@ -20,7 +20,7 @@ static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
 /// Define RGBA color.
 /// (Sometime, tuple structs are not very elegent).
 #[derive(Default)]
-pub struct Color(pub f32, pub f32, pub f32, pub f32);
+pub struct Rgba(pub f32, pub f32, pub f32, pub f32);
 
 #[derive(Debug)]
 pub struct GameResolution {
@@ -40,14 +40,14 @@ pub enum DrawMode {
 pub struct RendererOptions {
     with_multisampling: bool,
     with_depth_testing: bool,
-    default_color: Color,
+    default_color: Rgba,
 }
 
 impl RendererOptions {
     pub fn new(
         with_multisampling: bool,
         with_depth_testing: bool,
-        default_color: Color,
+        default_color: Rgba,
     ) -> Self {
         Self {
             with_multisampling,

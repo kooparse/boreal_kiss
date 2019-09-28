@@ -51,6 +51,11 @@ fn main() {
             glm::vec3(2., 0.0, 0.0),
             0.7,
         ),
+        primitives::load_mesh(
+            "game/assets/models/cube_color/BoxVertexColors.gltf",
+            glm::vec3(-2., 0.0, 0.0),
+            0.7,
+        ),
     ]);
 
     // Get mutable ref of the inner platform,
