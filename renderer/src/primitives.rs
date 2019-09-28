@@ -1,4 +1,4 @@
-use super::{DrawType, Mesh};
+use super::{DrawMode, Mesh};
 use crate::ray::Ray;
 use crate::shaders::ShaderType;
 use crate::texture::Texture;
@@ -11,7 +11,7 @@ use nalgebra_glm as glm;
 pub fn create_plane<'t, 'n>(
     name: &'n str,
     texture_path: &'t str,
-    position: glm::TVec3<f32>,
+    world_pos: glm::TVec3<f32>,
     scale: f32,
 ) -> Mesh<'n> {
     let texture = if !texture_path.is_empty() {
@@ -44,16 +44,16 @@ pub fn create_plane<'t, 'n>(
     Mesh {
         name,
         vertex,
-        position,
+        world_pos,
         texture,
         shader_type,
-        draw_type: DrawType::Triangles,
+        mode: DrawMode::Triangles,
     }
 }
 
 pub fn load_mesh<'n>(
     path: &'n str,
-    position: glm::TVec3<f32>,
+    world_pos: glm::TVec3<f32>,
     scale: f32,
 ) -> Mesh<'n> {
     let (model, buffers, images) = gltf::import(path).unwrap();
@@ -104,10 +104,10 @@ pub fn load_mesh<'n>(
     Mesh {
         name: path,
         vertex: vertices.remove(0),
-        position,
+        world_pos,
         texture: Some(loaded_textures.remove(0)),
         shader_type: ShaderType::SimpleTextureShader,
-        draw_type: DrawType::Triangles,
+        mode: DrawMode::Triangles,
     }
 }
 
@@ -122,9 +122,9 @@ pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'n> {
     Mesh {
         name,
         vertex,
-        position: glm::vec3(0.0, 0.0, 0.0),
+        world_pos: glm::vec3(0.0, 0.0, 0.0),
         texture: None,
         shader_type: ShaderType::SimpleShader,
-        draw_type: DrawType::Lines,
+        mode: DrawMode::Lines,
     }
 }

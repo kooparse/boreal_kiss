@@ -30,7 +30,7 @@ pub struct GameResolution {
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum DrawType {
+pub enum DrawMode {
     Triangles,
     Lines,
     Points,
@@ -71,8 +71,8 @@ struct LoadedObject {
     #[allow(unused)]
     name: String,
     is_hidden: bool,
-    position: Vector3,
-    draw_type: DrawType,
+    world_pos: Vector3,
+    mode: DrawMode,
     gpu_bound: GpuBound,
 }
 
@@ -102,8 +102,8 @@ pub struct Mesh<'n> {
     pub vertex: Vertex,
     pub texture: Option<Texture>,
     pub shader_type: ShaderType,
-    pub position: glm::TVec3<f32>,
-    pub draw_type: DrawType,
+    pub world_pos: glm::TVec3<f32>,
+    pub mode: DrawMode,
 }
 
 impl<'n> From<&Mesh<'n>> for LoadedObject {
@@ -127,8 +127,8 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
         LoadedObject {
             name: object.name.to_string(),
             is_hidden: false,
-            draw_type: object.draw_type,
-            position: object.position,
+            mode: object.mode,
+            world_pos: object.world_pos,
             gpu_bound,
         }
     }
@@ -277,7 +277,7 @@ impl Renderer {
 
             // TODO: This should be (maybe) stored in the object.
             let mut model = glm::Mat4::identity();
-            model = glm::translate(&model, &obj.position);
+            model = glm::translate(&model, &obj.world_pos);
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
 
@@ -286,8 +286,8 @@ impl Renderer {
             }
 
             unsafe {
-                match obj.draw_type {
-                    DrawType::Triangles => {
+                match obj.mode {
+                    DrawMode::Triangles => {
                         if let Some(ebo) = gpu_bound.ebo {
                             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
                             gl::DrawElements(
@@ -305,7 +305,7 @@ impl Renderer {
                         }
                     }
 
-                    DrawType::Lines => {
+                    DrawMode::Lines => {
                         gl::DrawArrays(
                             gl::LINES,
                             0,
