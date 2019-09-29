@@ -55,6 +55,7 @@ impl Sub for Vec3 {
 
 #[derive(Clone, Copy)]
 pub struct Mat4 {
+    #[allow(unused)]
     inner: [f32; 16],
 }
 
@@ -114,5 +115,4 @@ mod tests {
         // TODO: I shouldn't have to round this number...
         assert_eq!(a.normalize().length().round(), 1.);
     }
-
 }

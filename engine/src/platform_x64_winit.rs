@@ -11,7 +11,7 @@ use glutin::{
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{Rgba, GameResolution, RendererOptions};
+use renderer::{GameResolution, RendererOptions, Rgba};
 use std::convert::From;
 
 /// Construct a window for all desktop with the

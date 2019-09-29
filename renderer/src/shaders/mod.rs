@@ -12,6 +12,17 @@ pub enum ShaderType {
     SimpleTextureShader,
 }
 
+pub struct ShaderFlags {
+    pub has_uv: bool,
+    pub has_multi_uv: bool,
+}
+impl ShaderFlags {
+    pub fn set_flags_to_shader(&self, program_id: ShaderProgramId) {
+        set_bool(program_id, "HAS_UV", self.has_uv);
+        set_bool(program_id, "HAS_MULTI_UV", self.has_multi_uv);
+    }
+}
+
 /// Map vertex array object to shader.
 pub struct ShaderProgram {
     pub program_id: ShaderProgramId,
@@ -51,6 +62,25 @@ pub fn set_matrix4(
     let shader_variable = get_location(shader_id, var_name);
     unsafe {
         gl::UniformMatrix4fv(shader_variable, 1, gl::FALSE, transform.as_ptr());
+    }
+}
+
+pub fn set_sampler(shader_id: ShaderProgramId, value: usize) {
+    let name = format!("texture{}", value);
+    set_i32(shader_id, &name, value as i32);
+}
+
+pub fn set_i32(shader_id: ShaderProgramId, var_name: &str, value: i32) {
+    let shader_variable = get_location(shader_id, var_name);
+    unsafe {
+        gl::Uniform1i(shader_variable, value);
+    }
+}
+
+pub fn set_bool(shader_id: ShaderProgramId, var_name: &str, value: bool) {
+    let shader_variable = get_location(shader_id, var_name);
+    unsafe {
+        gl::Uniform1i(shader_variable, value as i32);
     }
 }
 

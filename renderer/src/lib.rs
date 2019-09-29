@@ -8,7 +8,7 @@ mod vertex;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use ray::Ray;
-use shaders::{ShaderManager, ShaderType};
+use shaders::{ShaderFlags, ShaderManager, ShaderType};
 use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
@@ -62,7 +62,7 @@ struct GpuBound {
     vao: VAO,
     vbo: VBO,
     ebo: Option<EBO>,
-    texture_id: Option<TexId>,
+    tex_ids: Vec<TexId>,
     primitives_len: usize,
     shader: ShaderType,
 }
@@ -74,6 +74,7 @@ struct LoadedObject {
     world_pos: Vector3,
     mode: DrawMode,
     gpu_bound: GpuBound,
+    flags: ShaderFlags,
 }
 
 impl Drop for LoadedObject {
@@ -83,9 +84,9 @@ impl Drop for LoadedObject {
             gl::DeleteVertexArrays(1, [self.gpu_bound.vao].as_ptr());
 
             // Delete texture.
-            if let Some(tex_id) = self.gpu_bound.texture_id {
-                gl::DeleteTextures(1, [tex_id].as_ptr());
-            }
+            // if let Some(tex_id) = self.gpu_bound.texture_id {
+            //     gl::DeleteTextures(1, [tex_id].as_ptr());
+            // }
 
             // Delete VBO and EBO.
             if let Some(ebo) = self.gpu_bound.ebo {
@@ -100,7 +101,7 @@ impl Drop for LoadedObject {
 pub struct Mesh<'n> {
     pub name: &'n str,
     pub vertex: Vertex,
-    pub texture: Option<Texture>,
+    pub textures: Vec<Texture>,
     pub shader_type: ShaderType,
     pub world_pos: glm::TVec3<f32>,
     pub mode: DrawMode,
@@ -109,7 +110,7 @@ pub struct Mesh<'n> {
 impl<'n> From<&Mesh<'n>> for LoadedObject {
     fn from(object: &Mesh<'n>) -> LoadedObject {
         // From system memmory to gpu memory.
-        let (vao, vbo, ebo, texture_id) = opengl::load_object_to_gpu(&object);
+        let (vao, vbo, ebo, tex_ids) = opengl::load_object_to_gpu(&object);
 
         let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
             object.vertex.indices.len()
@@ -121,7 +122,17 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
             ebo,
             primitives_len,
             shader: object.shader_type.clone(),
-            texture_id,
+            tex_ids,
+        };
+
+        let (has_uv, has_multi_uv) = {
+            let coords = &object.vertex.uv_coords;
+            (!coords.is_empty(), coords.len() > 1)
+        };
+
+        let flags = ShaderFlags {
+            has_uv,
+            has_multi_uv,
         };
 
         LoadedObject {
@@ -130,6 +141,7 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
             mode: object.mode,
             world_pos: object.world_pos,
             gpu_bound,
+            flags,
         }
     }
 }
@@ -281,9 +293,17 @@ impl Renderer {
 
             shaders::set_matrix4(program.program_id, "model", model.as_slice());
 
-            if let Some(tex_id) = gpu_bound.texture_id {
-                opengl::bind_texture(tex_id);
-            }
+            // Set shader flags.
+            obj.flags.set_flags_to_shader(program.program_id);
+
+            gpu_bound
+                .tex_ids
+                .iter()
+                .enumerate()
+                .for_each(|(index, tex_id)| {
+                    shaders::set_sampler(program.program_id, index);
+                    opengl::bind_texture(*tex_id, index);
+                });
 
             unsafe {
                 match obj.mode {
@@ -316,6 +336,10 @@ impl Renderer {
                     _ => unimplemented!(),
                 }
             }
+
+            // Reset
+            shaders::set_bool(program.program_id, "HAS_UV", false);
+            shaders::set_bool(program.program_id, "HAS_MULTI_UV", false);
         }
     }
 

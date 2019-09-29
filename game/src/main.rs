@@ -56,6 +56,16 @@ fn main() {
             glm::vec3(-2., 0.0, 0.0),
             0.7,
         ),
+        primitives::load_mesh(
+            "game/assets/models/cube_tex/BoxTextured.gltf",
+            glm::vec3(0., -2., 0.0),
+            1.,
+        ),
+        primitives::load_mesh(
+            "game/assets/models/multi_uv/MultiUVTest.gltf",
+            glm::vec3(0., 2., 0.0),
+            1.,
+        ),
     ]);
 
     // Get mutable ref of the inner platform,

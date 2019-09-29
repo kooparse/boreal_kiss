@@ -2,7 +2,7 @@ use super::{DrawMode, Mesh};
 use crate::ray::Ray;
 use crate::shaders::ShaderType;
 use crate::texture::Texture;
-use crate::vertex::{Color, Vertex};
+use crate::vertex::{UVSet, Vertex, UV};
 use gltf;
 use nalgebra_glm as glm;
 
@@ -14,10 +14,22 @@ pub fn create_plane<'t, 'n>(
     world_pos: glm::TVec3<f32>,
     scale: f32,
 ) -> Mesh<'n> {
-    let texture = if !texture_path.is_empty() {
-        Some(Texture::from_file(texture_path))
-    } else {
-        None
+    let mut shader_type = ShaderType::SimpleShader;
+    let mut textures = vec![];
+    let mut uv_coords = vec![];
+
+    if !texture_path.is_empty() {
+        uv_coords.push(UVSet::new(
+            0,
+            vec![
+                glm::vec2(0.0, 0.0),
+                glm::vec2(1.0, 0.0),
+                glm::vec2(1.0, 1.0),
+                glm::vec2(0.0, 1.0),
+            ],
+        ));
+        textures.push(Texture::from_file(texture_path));
+        shader_type = ShaderType::SimpleTextureShader;
     };
 
     let vertex = Vertex {
@@ -27,25 +39,16 @@ pub fn create_plane<'t, 'n>(
             glm::vec3(scale, 0., scale),
             glm::vec3(scale, 0., -scale),
         ],
-        uv_coords: vec![
-            glm::vec2(0.0, 0.0),
-            glm::vec2(1.0, 0.0),
-            glm::vec2(1.0, 1.0),
-            glm::vec2(0.0, 1.0),
-        ],
+        uv_coords,
         indices: vec![0, 1, 2, 0, 2, 3],
         ..Default::default()
     };
-
-    let shader_type = texture.as_ref().map_or(ShaderType::SimpleShader, |_| {
-        ShaderType::SimpleTextureShader
-    });
 
     Mesh {
         name,
         vertex,
         world_pos,
-        texture,
+        textures,
         shader_type,
         mode: DrawMode::Triangles,
     }
@@ -58,11 +61,7 @@ pub fn load_mesh<'n>(
 ) -> Mesh<'n> {
     let (model, buffers, images) = gltf::import(path).unwrap();
 
-    let mut loaded_textures: Vec<Texture> = images
-        .into_iter()
-        .map(|img| Texture::new((img.width, img.height), img.pixels))
-        .collect::<_>();
-
+    let mut shader_type = ShaderType::SimpleShader;
     let mut vertices: Vec<Vertex> = vec![];
 
     model.meshes().for_each(|mesh| {
@@ -101,31 +100,35 @@ pub fn load_mesh<'n>(
                 })
             };
 
-            if let Some(coords) = reader.read_tex_coords(0) {
-                vertex.uv_coords = coords
+            let mut tex_set = 0;
+            while let Some(coords) = reader.read_tex_coords(tex_set) {
+                let coords: Vec<UV> = coords
                     .into_f32()
                     .map(|uv| glm::vec2(uv[0], uv[1]))
                     .collect::<Vec<_>>();
+
+                vertex.uv_coords.push(UVSet::new(tex_set, coords));
+                tex_set += 1;
             }
 
             vertices.push(vertex);
         })
     });
 
-    let (texture, shader_type) = if !loaded_textures.is_empty() {
-        (
-            Some(loaded_textures.remove(0)),
-            ShaderType::SimpleTextureShader,
-        )
-    } else {
-        (None, ShaderType::SimpleShader)
-    };
+    let textures: Vec<Texture> = images
+        .into_iter()
+        .map(|img| Texture::new((img.width, img.height), img.pixels))
+        .collect::<_>();
+
+    if !textures.is_empty() {
+        shader_type = ShaderType::SimpleTextureShader;
+    }
 
     Mesh {
         name: path,
         vertex: vertices.remove(0),
         world_pos,
-        texture,
+        textures,
         shader_type,
         mode: DrawMode::Triangles,
     }
@@ -141,7 +144,7 @@ pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'n> {
         name,
         vertex,
         world_pos: glm::vec3(0.0, 0.0, 0.0),
-        texture: None,
+        textures: vec![],
         shader_type: ShaderType::SimpleShader,
         mode: DrawMode::Lines,
     }

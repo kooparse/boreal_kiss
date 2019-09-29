@@ -93,9 +93,9 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
     let mut total_size =
         object.vertex.primitives.len() * mem::size_of::<Vector3>();
 
-    if object.texture.is_some() {
-        total_size += object.vertex.uv_coords.len() * mem::size_of::<UV>();
-    }
+    object.vertex.uv_coords.iter().for_each(|set| {
+        total_size += set.coords.len() * mem::size_of::<UV>();
+    });
 
     if !object.vertex.colors.is_empty() {
         total_size += object.vertex.colors.len() * mem::size_of::<Color>();
@@ -143,17 +143,17 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
         }
 
         // Texture data.
-        if object.texture.is_some() {
-            gl::BufferSubData(
-                gl::ARRAY_BUFFER,
-                data_cursor,
-                (object.vertex.uv_coords.len() * mem::size_of::<UV>()) as isize,
-                object.vertex.uv_coords.as_ptr() as *const _,
-            );
-
-            // data_cursor = data_cursor
-            //     * (object.vertex.uv_coords.len() * mem::size_of::<UV>())
-            //         as isize;
+        if !object.textures.is_empty() {
+            object.vertex.uv_coords.iter().for_each(|set| {
+                gl::BufferSubData(
+                    gl::ARRAY_BUFFER,
+                    data_cursor,
+                    (set.coords.len() * mem::size_of::<UV>()) as isize,
+                    set.coords.as_ptr() as *const _,
+                );
+                data_cursor = data_cursor
+                    + (set.coords.len() * mem::size_of::<UV>()) as isize;
+            });
         }
 
         // Create EBO if indices is not empty.
@@ -181,8 +181,18 @@ pub fn generate_texture() -> TexId {
     }
 }
 
-pub fn bind_texture(tex_id: TexId) {
+pub fn bind_texture(tex_id: TexId, texture_number: usize) {
     unsafe {
+        match texture_number {
+            0 => gl::ActiveTexture(gl::TEXTURE0),
+            1 => gl::ActiveTexture(gl::TEXTURE1),
+            2 => gl::ActiveTexture(gl::TEXTURE2),
+            3 => gl::ActiveTexture(gl::TEXTURE3),
+            4 => gl::ActiveTexture(gl::TEXTURE4),
+            5 => gl::ActiveTexture(gl::TEXTURE5),
+            6 => gl::ActiveTexture(gl::TEXTURE6),
+            _ => (),
+        }
         gl::BindTexture(gl::TEXTURE_2D, tex_id);
     }
 }
@@ -194,7 +204,7 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     let tex_id = generate_texture();
 
     use_vao(vao);
-    bind_texture(tex_id);
+    gl::BindTexture(gl::TEXTURE_2D, tex_id);
 
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
@@ -229,16 +239,16 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
 /// Use a given vao then load data to the gpu.
 pub fn load_object_to_gpu(
     object: &Mesh,
-) -> (VAO, VBO, Option<EBO>, Option<TexId>) {
+) -> (VAO, VBO, Option<EBO>, Vec<TexId>) {
     unsafe {
         let vao = gen_vao();
-
         let (vbo, ebo) = load_bytes_to_gpu(vao, &object);
 
-        let tex_id = object
-            .texture
-            .as_ref()
-            .map(|tex| load_tex_to_gpu(vao, &tex));
+        let tex_ids = object
+            .textures
+            .iter()
+            .map(|tex| load_tex_to_gpu(vao, &tex))
+            .collect();
 
         use_vao(vao);
 
@@ -277,20 +287,29 @@ pub fn load_object_to_gpu(
                 );
                 gl::EnableVertexAttribArray(0);
 
-                gl::VertexAttribPointer(
-                    1,
-                    2,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    mem::size_of::<UV>() as i32,
-                    (object.vertex.primitives.len() * mem::size_of::<Vector3>())
-                        as *const _,
-                );
-                gl::EnableVertexAttribArray(1);
+                let mut data_cursor =
+                    object.vertex.primitives.len() * mem::size_of::<Vector3>();
+
+                for (key, set) in object.vertex.uv_coords.iter().enumerate() {
+                    let location = (key + 1) as u32;
+                    dbg!(location);
+                    gl::VertexAttribPointer(
+                        location,
+                        2,
+                        gl::FLOAT,
+                        gl::FALSE,
+                        mem::size_of::<UV>() as i32,
+                        data_cursor as *const _,
+                    );
+                    gl::EnableVertexAttribArray(location);
+
+                    data_cursor =
+                        data_cursor + set.coords.len() * mem::size_of::<UV>();
+                }
             }
         }
 
-        (vao, vbo, ebo, tex_id)
+        (vao, vbo, ebo, tex_ids)
     }
 }
 
