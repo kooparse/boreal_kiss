@@ -84,9 +84,10 @@ impl Drop for LoadedObject {
             gl::DeleteVertexArrays(1, [self.gpu_bound.vao].as_ptr());
 
             // Delete texture.
-            // if let Some(tex_id) = self.gpu_bound.texture_id {
-            //     gl::DeleteTextures(1, [tex_id].as_ptr());
-            // }
+            gl::DeleteTextures(
+                self.gpu_bound.tex_ids.len() as i32,
+                self.gpu_bound.tex_ids.as_ptr(),
+            );
 
             // Delete VBO and EBO.
             if let Some(ebo) = self.gpu_bound.ebo {
@@ -111,6 +112,7 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
     fn from(object: &Mesh<'n>) -> LoadedObject {
         // From system memmory to gpu memory.
         let (vao, vbo, ebo, tex_ids) = opengl::load_object_to_gpu(&object);
+        dbg!(&tex_ids);
 
         let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
             object.vertex.indices.len()

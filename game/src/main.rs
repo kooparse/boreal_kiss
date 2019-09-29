@@ -39,34 +39,34 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
-    let _ids = renderer.add_meshes(vec![
-        primitives::create_plane(
-            "plane_1",
-            "game/assets/textures/pos_debug.png",
-            glm::vec3(0., 0.0, 0.0),
-            1.0,
-        ),
-        primitives::load_mesh(
-            "game/assets/models/cube/Cube.gltf",
-            glm::vec3(2., 0.0, 0.0),
-            0.7,
-        ),
-        primitives::load_mesh(
-            "game/assets/models/cube_color/BoxVertexColors.gltf",
-            glm::vec3(-2., 0.0, 0.0),
-            0.7,
-        ),
-        primitives::load_mesh(
-            "game/assets/models/cube_tex/BoxTextured.gltf",
-            glm::vec3(0., -2., 0.0),
-            1.,
-        ),
-        primitives::load_mesh(
-            "game/assets/models/multi_uv/MultiUVTest.gltf",
-            glm::vec3(0., 2., 0.0),
-            1.,
-        ),
-    ]);
+    // let scene_2=  renderer.add_meshes(vec![
+    //     primitives::create_plane(
+    //         "plane_1",
+    //         "game/assets/textures/pos_debug.png",
+    //         glm::vec3(0., 0.0, 0.0),
+    //         1.0,
+    //     ),
+    //     primitives::load_mesh(
+    //         "game/assets/models/cube/Cube.gltf",
+    //         glm::vec3(2., 0.0, 0.0),
+    //         0.7,
+    //     ),
+    //     primitives::load_mesh(
+    //         "game/assets/models/cube_color/BoxVertexColors.gltf",
+    //         glm::vec3(-2., 0.0, 0.0),
+    //         0.7,
+    //     ),
+    //     primitives::load_mesh(
+    //         "game/assets/models/cube_tex/BoxTextured.gltf",
+    //         glm::vec3(0., -2., 0.0),
+    //         1.,
+    //     ),
+    //     primitives::load_mesh(
+    //         "game/assets/models/multi_uv/MultiUVTest.gltf",
+    //         glm::vec3(0., 2., 0.0),
+    //         1.,
+    //     ),
+    // ]);
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
@@ -90,6 +90,70 @@ fn main() {
         input.clicked(MouseButton::Left, |cursor| {
             let (origin, direction) = state.cast_ray(cursor);
             renderer.add_ray(origin, direction, 100f32);
+        });
+
+        input.pressed_once(Key::Key1, || {
+            renderer.flush();
+            renderer.add_meshes(vec![
+                primitives::create_plane(
+                    "plane_1",
+                    "game/assets/textures/pos_debug.png",
+                    glm::vec3(0., 0.0, 0.0),
+                    1.0,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube/Cube.gltf",
+                    glm::vec3(2., 0.0, 0.0),
+                    0.7,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube_color/BoxVertexColors.gltf",
+                    glm::vec3(-2., 0.0, 0.0),
+                    0.7,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube_tex/BoxTextured.gltf",
+                    glm::vec3(0., -2., 0.0),
+                    1.,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/multi_uv/MultiUVTest.gltf",
+                    glm::vec3(0., 2., 0.0),
+                    1.,
+                ),
+            ]);
+        });
+
+        input.pressed_once(Key::Key2, || {
+            renderer.flush();
+            renderer.add_meshes(vec![
+                primitives::create_plane(
+                    "plane_1",
+                    "game/assets/textures/pos_debug.png",
+                    glm::vec3(0., 1.2, 0.0),
+                    1.0,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube/Cube.gltf",
+                    glm::vec3(0., 0.0, 0.0),
+                    0.7,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube_color/BoxVertexColors.gltf",
+                    glm::vec3(2., 0.0, 0.0),
+                    0.7,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/cube_tex/BoxTextured.gltf",
+                    glm::vec3(0., 2., 0.0),
+                    1.,
+                ),
+                primitives::load_mesh(
+                    "game/assets/models/multi_uv/MultiUVTest.gltf",
+                    glm::vec3(0., -2., 0.0),
+                    1.,
+                ),
+            ]);
         });
 
         renderer.clear_screen();

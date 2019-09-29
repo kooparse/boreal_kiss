@@ -227,6 +227,26 @@ impl PlatformWrapper for WinitPlatform {
                                         .update_key(Key::Y, is_pressed),
                                     VirtualKeyCode::Z => game_input
                                         .update_key(Key::Z, is_pressed),
+                                    VirtualKeyCode::Key1 => game_input
+                                        .update_key(Key::Key1, is_pressed),
+                                    VirtualKeyCode::Key2 => game_input
+                                        .update_key(Key::Key2, is_pressed),
+                                    VirtualKeyCode::Key3 => game_input
+                                        .update_key(Key::Key3, is_pressed),
+                                    VirtualKeyCode::Key4 => game_input
+                                        .update_key(Key::Key4, is_pressed),
+                                    VirtualKeyCode::Key5 => game_input
+                                        .update_key(Key::Key5, is_pressed),
+                                    VirtualKeyCode::Key6 => game_input
+                                        .update_key(Key::Key6, is_pressed),
+                                    VirtualKeyCode::Key7 => game_input
+                                        .update_key(Key::Key7, is_pressed),
+                                    VirtualKeyCode::Key8 => game_input
+                                        .update_key(Key::Key8, is_pressed),
+                                    VirtualKeyCode::Key9 => game_input
+                                        .update_key(Key::Key9, is_pressed),
+                                    VirtualKeyCode::Key0 => game_input
+                                        .update_key(Key::Key0, is_pressed),
                                     VirtualKeyCode::Escape => {
                                         game_input
                                             .update_key(Key::Esc, is_pressed);

@@ -292,7 +292,6 @@ pub fn load_object_to_gpu(
 
                 for (key, set) in object.vertex.uv_coords.iter().enumerate() {
                     let location = (key + 1) as u32;
-                    dbg!(location);
                     gl::VertexAttribPointer(
                         location,
                         2,
