@@ -39,35 +39,6 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
-    // let scene_2=  renderer.add_meshes(vec![
-    //     primitives::create_plane(
-    //         "plane_1",
-    //         "game/assets/textures/pos_debug.png",
-    //         glm::vec3(0., 0.0, 0.0),
-    //         1.0,
-    //     ),
-    //     primitives::load_mesh(
-    //         "game/assets/models/cube/Cube.gltf",
-    //         glm::vec3(2., 0.0, 0.0),
-    //         0.7,
-    //     ),
-    //     primitives::load_mesh(
-    //         "game/assets/models/cube_color/BoxVertexColors.gltf",
-    //         glm::vec3(-2., 0.0, 0.0),
-    //         0.7,
-    //     ),
-    //     primitives::load_mesh(
-    //         "game/assets/models/cube_tex/BoxTextured.gltf",
-    //         glm::vec3(0., -2., 0.0),
-    //         1.,
-    //     ),
-    //     primitives::load_mesh(
-    //         "game/assets/models/multi_uv/MultiUVTest.gltf",
-    //         glm::vec3(0., 2., 0.0),
-    //         1.,
-    //     ),
-    // ]);
-
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
