@@ -24,10 +24,10 @@ pub fn get_opengl_loaded() {
             ptr::read(mem_ptr.offset(2)),
         ];
 
-        let version = str::from_utf8(&version)
+        let _version = str::from_utf8(&version)
             .expect("Error while retrieving the opengl version");
 
-        println!("OpenGl version: {}", version);
+        println!("OpenGl version: {}", _version);
     }
 }
 

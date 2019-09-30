@@ -20,6 +20,7 @@ fn main() {
     // Panic if platform not supported otherwise
     // log the current system and arch.
     platform::check_platform_supported();
+
     // Right now, we're using only glutin/winit for all desktop operating system.
     let platform_wrapper = if platform::is_desktop() {
         platform_x64::WinitPlatform::new(
@@ -42,27 +43,27 @@ fn main() {
         primitives::create_grid("debug_grid", glm::vec3(0., 0.0, 0.0), 20),
         primitives::create_plane(
             "plane_1",
-            "game/assets/textures/pos_debug.png",
+            "assets/textures/pos_debug.png",
             glm::vec3(0., 0.0, 0.0),
             1.0,
         ),
         primitives::load_mesh(
-            "game/assets/models/cube/Cube.gltf",
+            "assets/models/cube/Cube.gltf",
             glm::vec3(2., 0.0, 0.0),
             0.7,
         ),
         primitives::load_mesh(
-            "game/assets/models/cube_color/BoxVertexColors.gltf",
+            "assets/models/cube_color/BoxVertexColors.gltf",
             glm::vec3(-2., 0.0, 0.0),
             0.7,
         ),
         primitives::load_mesh(
-            "game/assets/models/cube_tex/BoxTextured.gltf",
+            "assets/models/cube_tex/BoxTextured.gltf",
             glm::vec3(0., -2., 0.0),
             1.,
         ),
         primitives::load_mesh(
-            "game/assets/models/multi_uv/MultiUVTest.gltf",
+            "assets/models/multi_uv/MultiUVTest.gltf",
             glm::vec3(0., 2., 0.0),
             1.,
         ),
@@ -102,27 +103,27 @@ fn main() {
                 ),
                 primitives::create_plane(
                     "plane_1",
-                    "game/assets/textures/pos_debug.png",
+                    "assets/textures/pos_debug.png",
                     glm::vec3(0., 1.2, 0.0),
                     1.0,
                 ),
                 primitives::load_mesh(
-                    "game/assets/models/cube/Cube.gltf",
+                    "assets/models/cube/Cube.gltf",
                     glm::vec3(0., 0.0, 0.0),
                     0.7,
                 ),
                 primitives::load_mesh(
-                    "game/assets/models/cube_color/BoxVertexColors.gltf",
+                    "assets/models/cube_color/BoxVertexColors.gltf",
                     glm::vec3(2., 0.0, 0.0),
                     0.7,
                 ),
                 primitives::load_mesh(
-                    "game/assets/models/cube_tex/BoxTextured.gltf",
+                    "assets/models/cube_tex/BoxTextured.gltf",
                     glm::vec3(0., 2., 0.0),
                     1.,
                 ),
                 primitives::load_mesh(
-                    "game/assets/models/multi_uv/MultiUVTest.gltf",
+                    "assets/models/multi_uv/MultiUVTest.gltf",
                     glm::vec3(0., -2., 0.0),
                     1.,
                 ),

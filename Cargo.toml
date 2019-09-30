@@ -1,5 +1,5 @@
 [package]
-name = "Bits"
+name = "bits"
 version = "0.1.0"
 authors = ["Alexandre Chêne <kooparse@protonmail.com>"]
 edition = "2018"
@@ -9,9 +9,5 @@ nalgebra-glm = "0.4.2"
 engine = { path = "engine" }
 renderer = { path = "renderer" }
 
-[workspace]
-members = ["engine", "renderer"]
-
-[[bin]]
-name = "game"
-path = "game/src/main.rs"
+[features]
+debug = []

@@ -36,7 +36,7 @@ impl Platform {
 }
 
 pub fn check_platform_supported() {
-    let target_os: &str = if cfg!(target_os = "macos") {
+    let _target_os: &str = if cfg!(target_os = "macos") {
         "macOS"
     } else if cfg!(target_os = "windows") {
         "Windows"
@@ -44,13 +44,13 @@ pub fn check_platform_supported() {
         panic!("Target system not currently supported");
     };
 
-    let target_arch: &str = if cfg!(target_arch = "x86_64") {
+    let _target_arch: &str = if cfg!(target_arch = "x86_64") {
         "x86_64"
     } else {
         panic!("Architecture not currently supported")
     };
 
-    dbg!(target_os, target_arch);
+    dbg!(_target_os, _target_arch);
 }
 
 pub fn is_desktop() -> bool {
