@@ -48,11 +48,9 @@ impl Camera {
         &mut self,
         input: &mut Input,
         time: &Time,
-    ) -> glm::TMat4<f32> {
+    ) {
         self.update_pos(input, time);
         self.update_spin(input, time);
-
-        self.get_look_at()
     }
 
     pub fn update_pos(&mut self, input: &mut Input, time: &Time) {

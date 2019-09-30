@@ -6,17 +6,21 @@ use crate::constants::{
 };
 // #[cfg(target_os = "xbox_one")]
 // use engine::window_xbox as window_x64;
+use editor::Editor;
 use engine::{
     game_loop::GameLoop,
-    input::{Input, Key, MouseButton},
+    input::{Input, Key},
     platform::{self, Platform},
     platform_x64_winit as platform_x64,
 };
 use nalgebra_glm as glm;
-use renderer::{primitives, Renderer};
+use renderer::Renderer;
 use state::GameState;
 
 fn main() {
+    #[cfg(feature = "debug")]
+    dbg!("asdasd");
+
     // Panic if platform not supported otherwise
     // log the current system and arch.
     platform::check_platform_supported();
@@ -39,35 +43,8 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
-    renderer.add_meshes(vec![
-        primitives::create_grid("debug_grid", glm::vec3(0., 0.0, 0.0), 20),
-        primitives::create_plane(
-            "plane_1",
-            "assets/textures/pos_debug.png",
-            glm::vec3(0., 0.0, 0.0),
-            1.0,
-        ),
-        primitives::load_mesh(
-            "assets/models/cube/Cube.gltf",
-            glm::vec3(2., 0.0, 0.0),
-            0.7,
-        ),
-        primitives::load_mesh(
-            "assets/models/cube_color/BoxVertexColors.gltf",
-            glm::vec3(-2., 0.0, 0.0),
-            0.7,
-        ),
-        primitives::load_mesh(
-            "assets/models/cube_tex/BoxTextured.gltf",
-            glm::vec3(0., -2., 0.0),
-            1.,
-        ),
-        primitives::load_mesh(
-            "assets/models/multi_uv/MultiUVTest.gltf",
-            glm::vec3(0., 2., 0.0),
-            1.,
-        ),
-    ]);
+    let mut editor = Editor::default();
+    editor.init(&mut renderer);
 
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
@@ -86,49 +63,8 @@ fn main() {
             );
         });
 
-        state.move_camera(&mut input, window, time);
-
-        input.clicked(MouseButton::Left, |cursor| {
-            let (origin, direction) = state.cast_ray(cursor);
-            renderer.add_ray(origin, direction, 100f32);
-        });
-
-        input.pressed_once(Key::Key1, || {
-            renderer.flush();
-            renderer.add_meshes(vec![
-                primitives::create_grid(
-                    "debug_grid",
-                    glm::vec3(0., 0.0, 0.0),
-                    20,
-                ),
-                primitives::create_plane(
-                    "plane_1",
-                    "assets/textures/pos_debug.png",
-                    glm::vec3(0., 1.2, 0.0),
-                    1.0,
-                ),
-                primitives::load_mesh(
-                    "assets/models/cube/Cube.gltf",
-                    glm::vec3(0., 0.0, 0.0),
-                    0.7,
-                ),
-                primitives::load_mesh(
-                    "assets/models/cube_color/BoxVertexColors.gltf",
-                    glm::vec3(2., 0.0, 0.0),
-                    0.7,
-                ),
-                primitives::load_mesh(
-                    "assets/models/cube_tex/BoxTextured.gltf",
-                    glm::vec3(0., 2., 0.0),
-                    1.,
-                ),
-                primitives::load_mesh(
-                    "assets/models/multi_uv/MultiUVTest.gltf",
-                    glm::vec3(0., -2., 0.0),
-                    1.,
-                ),
-            ]);
-        });
+        editor.update_events(&mut input, &mut renderer, &state.render_state);
+        state.render_state.view = editor.move_camera(&mut input, window, time);
 
         renderer.clear_screen();
         renderer.draw(&state.render_state);

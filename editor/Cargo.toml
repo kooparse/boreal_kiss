@@ -1,15 +1,11 @@
 [package]
-name = "bits"
+name = "editor"
 version = "0.1.0"
 authors = ["Alexandre Chêne <kooparse@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
 nalgebra-glm = "0.4.2"
-engine = { path = "engine" }
-editor = { path = "editor" }
-renderer = { path = "renderer" }
+renderer = { path = "../renderer" }
+engine = { path = "../engine" }
 
-[features]
-default = []
-debug = []
