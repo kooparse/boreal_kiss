@@ -9,6 +9,7 @@ use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use ray::Ray;
 use shaders::{ShaderFlags, ShaderManager, ShaderType};
+use std::cmp::min;
 use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
@@ -126,14 +127,25 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
             tex_ids,
         };
 
-        let (has_uv, has_multi_uv) = {
-            let coords = &object.vertex.uv_coords;
-            (!coords.is_empty(), coords.len() > 1)
+        let (has_uv, has_multi_uv, has_vert_colors, _tex_number) = {
+            let colors = &object.vertex.colors;
+            // We want a correlation between the number of set of coords
+            // and the number of texture loaded.
+            let tex_number =
+                min(object.vertex.uv_coords.len(), object.textures.len());
+
+            (
+                tex_number > 0,
+                tex_number > 1,
+                !colors.is_empty(),
+                tex_number,
+            )
         };
 
         let flags = ShaderFlags {
             has_uv,
             has_multi_uv,
+            has_vert_colors,
         };
 
         LoadedObject {
@@ -337,10 +349,6 @@ impl Renderer {
                     _ => unimplemented!(),
                 }
             }
-
-            // Reset
-            shaders::set_bool(program.program_id, "HAS_UV", false);
-            shaders::set_bool(program.program_id, "HAS_MULTI_UV", false);
         }
     }
 

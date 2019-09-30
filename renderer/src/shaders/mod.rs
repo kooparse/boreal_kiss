@@ -1,5 +1,4 @@
 pub mod simple;
-pub mod simple_with_tex;
 use gl::{self, types::GLchar};
 use std::{collections::HashMap, ffi::CString, ptr, str};
 
@@ -9,17 +8,18 @@ pub type ShaderProgramId = u32;
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
 pub enum ShaderType {
     SimpleShader,
-    SimpleTextureShader,
 }
 
 pub struct ShaderFlags {
     pub has_uv: bool,
     pub has_multi_uv: bool,
+    pub has_vert_colors: bool,
 }
 impl ShaderFlags {
     pub fn set_flags_to_shader(&self, program_id: ShaderProgramId) {
         set_bool(program_id, "HAS_UV", self.has_uv);
         set_bool(program_id, "HAS_MULTI_UV", self.has_multi_uv);
+        set_bool(program_id, "HAS_VERT_COLORS", self.has_vert_colors);
     }
 }
 
@@ -37,9 +37,7 @@ pub struct ShaderManager {
 impl ShaderManager {
     pub fn new() -> Self {
         let mut list = HashMap::new();
-
         list.insert(simple::TYPE, simple::get_program());
-        list.insert(simple_with_tex::TYPE, simple_with_tex::get_program());
 
         Self { list }
     }

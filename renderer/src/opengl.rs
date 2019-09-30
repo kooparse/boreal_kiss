@@ -1,4 +1,4 @@
-use super::shaders::{ShaderProgramId, ShaderType};
+use super::shaders::ShaderProgramId;
 use super::texture::Texture;
 use super::vertex::{Color, Vector3, UV};
 use super::{Mesh, Rgba};
@@ -90,16 +90,13 @@ pub fn use_vao(vao: VAO) {
 pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
     let with_ebo = !object.vertex.indices.is_empty();
 
-    let mut total_size =
-        object.vertex.primitives.len() * mem::size_of::<Vector3>();
+    let mut total_size = (object.vertex.primitives.len()
+        * mem::size_of::<Vector3>())
+        + (object.vertex.colors.len() * mem::size_of::<Color>());
 
     object.vertex.uv_coords.iter().for_each(|set| {
         total_size += set.coords.len() * mem::size_of::<UV>();
     });
-
-    if !object.vertex.colors.is_empty() {
-        total_size += object.vertex.colors.len() * mem::size_of::<Color>();
-    }
 
     unsafe {
         use_vao(vao);
@@ -115,7 +112,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
             gl::STATIC_DRAW,
         );
 
-        let mut data_cursor = 0;
+        let mut data_cursor: isize = 0;
 
         // Position data.
         gl::BufferSubData(
@@ -125,36 +122,29 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
                 as isize,
             object.vertex.primitives.as_ptr() as *const _,
         );
-
-        data_cursor = (object.vertex.primitives.len()
+        data_cursor += (object.vertex.primitives.len()
             * mem::size_of::<Vector3>()) as isize;
 
-        if !object.vertex.colors.is_empty() {
+        gl::BufferSubData(
+            gl::ARRAY_BUFFER,
+            data_cursor,
+            (object.vertex.colors.len() * mem::size_of::<Color>()) as isize,
+            object.vertex.colors.as_ptr() as *const _,
+        );
+
+        data_cursor +=
+            (object.vertex.colors.len() * mem::size_of::<Color>()) as isize;
+
+        // Texture data.
+        object.vertex.uv_coords.iter().for_each(|set| {
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
                 data_cursor,
-                (object.vertex.colors.len() * mem::size_of::<Color>()) as isize,
-                object.vertex.colors.as_ptr() as *const _,
+                (set.coords.len() * mem::size_of::<UV>()) as isize,
+                set.coords.as_ptr() as *const _,
             );
-
-            data_cursor = data_cursor
-                * (object.vertex.colors.len() * mem::size_of::<Color>())
-                    as isize;
-        }
-
-        // Texture data.
-        if !object.textures.is_empty() {
-            object.vertex.uv_coords.iter().for_each(|set| {
-                gl::BufferSubData(
-                    gl::ARRAY_BUFFER,
-                    data_cursor,
-                    (set.coords.len() * mem::size_of::<UV>()) as isize,
-                    set.coords.as_ptr() as *const _,
-                );
-                data_cursor = data_cursor
-                    + (set.coords.len() * mem::size_of::<UV>()) as isize;
-            });
-        }
+            data_cursor += (set.coords.len() * mem::size_of::<UV>()) as isize;
+        });
 
         // Create EBO if indices is not empty.
         if let Some(ebo) = ebo {
@@ -183,16 +173,8 @@ pub fn generate_texture() -> TexId {
 
 pub fn bind_texture(tex_id: TexId, texture_number: usize) {
     unsafe {
-        match texture_number {
-            0 => gl::ActiveTexture(gl::TEXTURE0),
-            1 => gl::ActiveTexture(gl::TEXTURE1),
-            2 => gl::ActiveTexture(gl::TEXTURE2),
-            3 => gl::ActiveTexture(gl::TEXTURE3),
-            4 => gl::ActiveTexture(gl::TEXTURE4),
-            5 => gl::ActiveTexture(gl::TEXTURE5),
-            6 => gl::ActiveTexture(gl::TEXTURE6),
-            _ => (),
-        }
+        // TEXTURE0 + 1 = TEXTURE1.
+        gl::ActiveTexture(gl::TEXTURE0 + texture_number as u32);
         gl::BindTexture(gl::TEXTURE_2D, tex_id);
     }
 }
@@ -252,60 +234,52 @@ pub fn load_object_to_gpu(
 
         use_vao(vao);
 
-        match object.shader_type {
-            ShaderType::SimpleShader => {
-                gl::VertexAttribPointer(
-                    0,
-                    3,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    mem::size_of::<Vector3>() as i32,
-                    ptr::null(),
-                );
-                gl::EnableVertexAttribArray(0);
+        let mut location = 0;
+        let mut data_cursor = 0;
 
-                gl::VertexAttribPointer(
-                    1,
-                    4,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    mem::size_of::<Color>() as i32,
-                    (object.vertex.primitives.len() * mem::size_of::<Vector3>())
-                        as *const _,
-                );
-                gl::EnableVertexAttribArray(1);
-            }
+        // Positions
+        gl::VertexAttribPointer(
+            location,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            mem::size_of::<Vector3>() as i32,
+            ptr::null(),
+        );
+        gl::EnableVertexAttribArray(0);
 
-            ShaderType::SimpleTextureShader => {
-                gl::VertexAttribPointer(
-                    0,
-                    3,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    mem::size_of::<Vector3>() as i32,
-                    ptr::null(),
-                );
-                gl::EnableVertexAttribArray(0);
+        location += 1;
+        data_cursor +=
+            object.vertex.primitives.len() * mem::size_of::<Vector3>();
 
-                let mut data_cursor =
-                    object.vertex.primitives.len() * mem::size_of::<Vector3>();
+        // Colors
+        gl::VertexAttribPointer(
+            location,
+            4,
+            gl::FLOAT,
+            gl::FALSE,
+            mem::size_of::<Color>() as i32,
+            data_cursor as *const _,
+        );
+        gl::EnableVertexAttribArray(1);
 
-                for (key, set) in object.vertex.uv_coords.iter().enumerate() {
-                    let location = (key + 1) as u32;
-                    gl::VertexAttribPointer(
-                        location,
-                        2,
-                        gl::FLOAT,
-                        gl::FALSE,
-                        mem::size_of::<UV>() as i32,
-                        data_cursor as *const _,
-                    );
-                    gl::EnableVertexAttribArray(location);
+        location += 1;
+        data_cursor += object.vertex.colors.len() * mem::size_of::<Color>();
 
-                    data_cursor =
-                        data_cursor + set.coords.len() * mem::size_of::<UV>();
-                }
-            }
+        // UV Coords.
+        for set in object.vertex.uv_coords.iter() {
+            gl::VertexAttribPointer(
+                location,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                mem::size_of::<UV>() as i32,
+                data_cursor as *const _,
+            );
+            gl::EnableVertexAttribArray(location);
+
+            location += 1;
+            data_cursor += set.coords.len() * mem::size_of::<UV>();
         }
 
         (vao, vbo, ebo, tex_ids)
