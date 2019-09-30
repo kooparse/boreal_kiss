@@ -18,9 +18,6 @@ use renderer::Renderer;
 use state::GameState;
 
 fn main() {
-    #[cfg(feature = "debug")]
-    dbg!("asdasd");
-
     // Panic if platform not supported otherwise
     // log the current system and arch.
     platform::check_platform_supported();
