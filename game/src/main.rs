@@ -15,7 +15,6 @@ use engine::{
 use nalgebra_glm as glm;
 use renderer::{primitives, Renderer};
 use state::GameState;
-#[cfg(any(target_os = "macos", target_os = "windows",))]
 
 fn main() {
     // Panic if platform not supported otherwise
