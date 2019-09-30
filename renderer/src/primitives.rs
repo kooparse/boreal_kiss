@@ -14,7 +14,7 @@ pub fn create_plane<'t, 'n>(
     world_pos: glm::TVec3<f32>,
     scale: f32,
 ) -> Mesh<'n> {
-    let mut shader_type = ShaderType::SimpleShader;
+    let shader_type = ShaderType::SimpleTextureShader;
     let mut textures = vec![];
     let mut uv_coords = vec![];
 
@@ -29,7 +29,6 @@ pub fn create_plane<'t, 'n>(
             ],
         ));
         textures.push(Texture::from_file(texture_path));
-        shader_type = ShaderType::SimpleTextureShader;
     };
 
     let vertex = Vertex {
@@ -145,7 +144,44 @@ pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'n> {
         vertex,
         world_pos: glm::vec3(0.0, 0.0, 0.0),
         textures: vec![],
-        shader_type: ShaderType::SimpleShader,
+        shader_type: ShaderType::SimpleTextureShader,
+        mode: DrawMode::Lines,
+    }
+}
+
+pub fn create_grid<'t, 'n>(
+    name: &'n str,
+    world_pos: glm::TVec3<f32>,
+    dim: i32,
+) -> Mesh<'n> {
+    let scale = 5f32;
+    let mut list: Vec<glm::TVec3<f32>> = vec![];
+
+    for i in 0..(dim + 1) {
+        for j in 0..(dim + 1) {
+            let ratio = (dim / 2) as f32;
+            let r = (i as f32 / ratio) * scale;
+            let c = (j as f32 / ratio) * scale;
+
+            list.push(glm::vec3(-scale, 0., -scale + r));
+            list.push(glm::vec3(scale, 0., -scale + r));
+
+            list.push(glm::vec3(-scale + c, 0., scale));
+            list.push(glm::vec3(-scale + c, 0., -scale));
+        }
+    }
+
+    let vertex = Vertex {
+        primitives: list,
+        ..Default::default()
+    };
+
+    Mesh {
+        name,
+        vertex,
+        world_pos,
+        textures: vec![],
+        shader_type: ShaderType::SimpleTextureShader,
         mode: DrawMode::Lines,
     }
 }

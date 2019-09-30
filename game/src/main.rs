@@ -39,6 +39,12 @@ fn main() {
     let mut state = GameState::default();
     let mut renderer = Renderer::new(platform.get().load_opengl());
 
+    renderer.add_meshes(vec![primitives::create_grid(
+        "debug_grid",
+        glm::vec3(0., 0.0, 0.0),
+        20,
+    )]);
+
     // Get mutable ref of the inner platform,
     // we got an "PlatformWrapper" trait object.
     let window = platform.get_mut();
@@ -66,6 +72,11 @@ fn main() {
         input.pressed_once(Key::Key1, || {
             renderer.flush();
             renderer.add_meshes(vec![
+                primitives::create_grid(
+                    "debug_grid",
+                    glm::vec3(0., 0.0, 0.0),
+                    20,
+                ),
                 primitives::create_plane(
                     "plane_1",
                     "game/assets/textures/pos_debug.png",
@@ -98,6 +109,11 @@ fn main() {
         input.pressed_once(Key::Key2, || {
             renderer.flush();
             renderer.add_meshes(vec![
+                primitives::create_grid(
+                    "debug_grid",
+                    glm::vec3(0., 0.0, 0.0),
+                    20,
+                ),
                 primitives::create_plane(
                     "plane_1",
                     "game/assets/textures/pos_debug.png",

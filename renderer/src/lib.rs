@@ -112,7 +112,6 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
     fn from(object: &Mesh<'n>) -> LoadedObject {
         // From system memmory to gpu memory.
         let (vao, vbo, ebo, tex_ids) = opengl::load_object_to_gpu(&object);
-        dbg!(&tex_ids);
 
         let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
             object.vertex.indices.len()

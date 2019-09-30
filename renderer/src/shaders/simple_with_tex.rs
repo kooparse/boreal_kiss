@@ -24,6 +24,7 @@ pub const VERTEX_SOURCE: &str = r#"
 pub const FRAGMENT_SOURCE: &str = r#"
     #version 330 core
 
+    in vec4 position;
     in vec2 TexCoord;
     in vec2 TexCoord2;
 
