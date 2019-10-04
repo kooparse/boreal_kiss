@@ -179,13 +179,21 @@ pub fn bind_texture(tex_id: TexId, texture_number: usize) {
     }
 }
 
-pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
+pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture, is_font: bool) -> TexId {
     let dim = &tex.dim;
     let data = &tex.raw;
 
+    use_vao(vao);
     let tex_id = generate_texture();
 
-    use_vao(vao);
+    let mut c_type = gl::RGBA;
+
+    // TODO: Why?
+    if is_font {
+        gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+        c_type = gl::RED;
+    }
+
     gl::BindTexture(gl::TEXTURE_2D, tex_id);
 
     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
@@ -204,11 +212,11 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     gl::TexImage2D(
         gl::TEXTURE_2D,
         0,
-        gl::RGBA as i32,
+        c_type as i32,
         dim.0 as i32,
         dim.1 as i32,
         0,
-        gl::RGBA,
+        c_type,
         gl::UNSIGNED_BYTE,
         data.as_ptr() as *const c_void,
     );
@@ -216,6 +224,42 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture) -> TexId {
     gl::GenerateMipmap(gl::TEXTURE_2D);
 
     tex_id
+}
+
+pub fn load_font_to_gpu(
+    vertices: &[f32; 24],
+    texture: &Texture,
+) -> (VAO, VBO, TexId) {
+    let vao = gen_vao();
+    use_vao(vao);
+
+    unsafe {
+        let tex_id = load_tex_to_gpu(vao, texture, true);
+
+        let vbo = gen_buffer();
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * mem::size_of::<f32>()) as _,
+            vertices.as_ptr() as *const _,
+            gl::DYNAMIC_DRAW,
+        );
+
+        gl::VertexAttribPointer(
+            0,
+            4,
+            gl::FLOAT,
+            gl::FALSE,
+            (4 * mem::size_of::<f32>()) as _,
+            ptr::null(),
+        );
+
+        gl::EnableVertexAttribArray(0);
+
+        (vao, vbo, tex_id)
+    }
 }
 
 /// Use a given vao then load data to the gpu.
@@ -229,7 +273,7 @@ pub fn load_object_to_gpu(
         let tex_ids = object
             .textures
             .iter()
-            .map(|tex| load_tex_to_gpu(vao, &tex))
+            .map(|tex| load_tex_to_gpu(vao, &tex, false))
             .collect();
 
         use_vao(vao);

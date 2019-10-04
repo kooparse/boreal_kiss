@@ -1,13 +1,16 @@
 pub mod simple;
+pub mod text;
+
 use gl::{self, types::GLchar};
 use std::{collections::HashMap, ffi::CString, ptr, str};
 
 pub type ShaderProgramId = u32;
 
 // All shaders available.
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub enum ShaderType {
     SimpleShader,
+    TextShader,
 }
 
 pub struct ShaderFlags {
@@ -39,6 +42,8 @@ impl ShaderManager {
         let mut list = HashMap::new();
         list.insert(simple::TYPE, simple::get_program());
 
+        list.insert(text::TYPE, text::get_program());
+
         Self { list }
     }
 }
@@ -60,6 +65,13 @@ pub fn set_matrix4(
     let shader_variable = get_location(shader_id, var_name);
     unsafe {
         gl::UniformMatrix4fv(shader_variable, 1, gl::FALSE, transform.as_ptr());
+    }
+}
+
+pub fn set_vec3(shader_id: ShaderProgramId, var_name: &str, value: &[f32; 3]) {
+    let shader_variable = get_location(shader_id, var_name);
+    unsafe {
+        gl::Uniform3f(shader_variable, value[0], value[1], value[2]);
     }
 }
 

@@ -1,27 +1,39 @@
+mod font;
 mod opengl;
 pub mod primitives;
 mod ray;
 mod shaders;
 mod texture;
 mod vertex;
+mod storage;
+mod text;
+mod utils;
 
+use crate::text::Text;
+pub use crate::storage::{Storage, GeneratedId};
+use crate::font::Font;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use ray::Ray;
 use shaders::{ShaderFlags, ShaderManager, ShaderType};
 use std::cmp::min;
-use std::collections::HashMap;
 use std::ptr;
 use texture::Texture;
 use vertex::{Vector3, Vertex};
 
-type LoadedObjectId = u64;
-static mut LOADED_OBJECT_ID: LoadedObjectId = 0;
+#[derive(Default)]
+pub struct Pos2D(pub f32, pub f32);
+#[derive(Default)]
+pub struct Pos3D(pub f32, pub f32, pub f32);
 
 /// Define RGBA color.
 /// (Sometime, tuple structs are not very elegent).
 #[derive(Default)]
 pub struct Rgba(pub f32, pub f32, pub f32, pub f32);
+
+/// Define RGB color.
+#[derive(Default)]
+pub struct Rgb(pub f32, pub f32, pub f32);
 
 #[derive(Debug)]
 pub struct GameResolution {
@@ -59,7 +71,8 @@ impl RendererOptions {
 }
 
 /// All the data linked to our backend renderer.
-struct GpuBound {
+#[derive(Debug)]
+pub struct GpuBound {
     vao: VAO,
     vbo: VBO,
     ebo: Option<EBO>,
@@ -68,7 +81,29 @@ struct GpuBound {
     shader: ShaderType,
 }
 
-struct LoadedObject {
+impl Drop for GpuBound {
+    fn drop(&mut self) {
+        unsafe {
+            // Delete VAO.
+            gl::DeleteVertexArrays(1, [self.vao].as_ptr());
+
+            // Delete texture.
+            gl::DeleteTextures(
+                self.tex_ids.len() as i32,
+                self.tex_ids.as_ptr(),
+            );
+
+            // Delete VBO and EBO.
+            if let Some(ebo) = self.ebo {
+                gl::DeleteBuffers(2, [self.vbo, ebo].as_ptr());
+            } else {
+                gl::DeleteBuffers(1, [self.vbo].as_ptr());
+            }
+        }
+    }
+}
+
+pub struct LoadedObject {
     #[allow(unused)]
     name: String,
     is_hidden: bool,
@@ -76,28 +111,6 @@ struct LoadedObject {
     mode: DrawMode,
     gpu_bound: GpuBound,
     flags: ShaderFlags,
-}
-
-impl Drop for LoadedObject {
-    fn drop(&mut self) {
-        unsafe {
-            // Delete VAO.
-            gl::DeleteVertexArrays(1, [self.gpu_bound.vao].as_ptr());
-
-            // Delete texture.
-            gl::DeleteTextures(
-                self.gpu_bound.tex_ids.len() as i32,
-                self.gpu_bound.tex_ids.as_ptr(),
-            );
-
-            // Delete VBO and EBO.
-            if let Some(ebo) = self.gpu_bound.ebo {
-                gl::DeleteBuffers(2, [self.gpu_bound.vbo, ebo].as_ptr());
-            } else {
-                gl::DeleteBuffers(1, [self.gpu_bound.vbo].as_ptr());
-            }
-        }
-    }
 }
 
 pub struct Mesh<'n> {
@@ -179,9 +192,18 @@ impl RenderState {
     }
 }
 
+
+
 pub struct Renderer {
+    // Some options like resolution, etc...
     options: RendererOptions,
-    object_storage: HashMap<LoadedObjectId, LoadedObject>,
+    // Store all our mesh there (only the gpu information).
+    object_storage: Storage<LoadedObject>,
+    // For now, only one font...
+    default_font: Font,
+    // Store all the text that should be rendered on the screen.
+    text_storage: Storage<Text>,
+    // Store all our shaders here. 
     shader_manager: ShaderManager,
 }
 
@@ -201,7 +223,9 @@ impl Renderer {
 
         Self {
             options,
-            object_storage: HashMap::new(),
+            object_storage: Storage::default(),
+            default_font: Font::new("assets/fonts/Roboto/Roboto-Regular.ttf"),
+            text_storage: Storage::default(),
             shader_manager,
         }
     }
@@ -216,44 +240,34 @@ impl Renderer {
     }
 
     /// We push objects into the storage and load data into gl.
-    pub fn add_mesh(&mut self, object: Mesh) -> LoadedObjectId {
-        unsafe {
-            LOADED_OBJECT_ID += 1;
+    pub fn add_mesh(&mut self, object: Mesh) -> GeneratedId {
             self.object_storage
-                .insert(LOADED_OBJECT_ID, LoadedObject::from(&object));
+                .push(LoadedObject::from(&object))
 
-            LOADED_OBJECT_ID
-        }
     }
-
-    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<LoadedObjectId> {
-        let mut ids = vec![];
-        objects.iter().for_each(|object| unsafe {
-            LOADED_OBJECT_ID += 1;
-            ids.push(LOADED_OBJECT_ID);
+    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GeneratedId> {
+        objects.iter().map(|object| {
             self.object_storage
-                .insert(LOADED_OBJECT_ID, LoadedObject::from(object));
-        });
-
-        ids
+                .push(LoadedObject::from(object))
+        }).collect()
     }
 
     /// Hide a mesh (it will still be loaded in the gpu mem).
-    pub fn hide_mesh(&mut self, id: LoadedObjectId) {
+    pub fn hide_mesh(&mut self, id: GeneratedId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             object.is_hidden = true;
         }
     }
 
     /// Show a hidden mesh.
-    pub fn show_mesh(&mut self, id: LoadedObjectId) {
+    pub fn show_mesh(&mut self, id: GeneratedId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             object.is_hidden = false;
         }
     }
 
     /// Toggle show/hidden mesh.
-    pub fn toggle_mesh(&mut self, id: LoadedObjectId) {
+    pub fn toggle_mesh(&mut self, id: GeneratedId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             if object.is_hidden {
                 self.show_mesh(id);
@@ -274,8 +288,24 @@ impl Renderer {
         self.add_mesh(primitives::create_line(&name, ray));
     }
 
+    pub fn add_text<T: ToString>(&mut self, text: T, position: Pos2D, color: Rgb) -> GeneratedId {
+        let text = Text {
+            content: text.to_string(),
+            position,
+            font_attached: "Roboto-Regular.ttf".to_owned(),
+            color,
+        };
+
+        self.text_storage.push(text)
+    }
+
+    pub fn remove_text(&mut self, id: &GeneratedId) {
+        self.text_storage.remove(id);
+    }
+
     pub fn draw(&mut self, state: &RenderState) {
-        for obj in self.object_storage.values() {
+        // Render all our meshes to the screen.
+        for obj in self.object_storage.items.values() {
             if obj.is_hidden {
                 continue;
             }
@@ -284,6 +314,7 @@ impl Renderer {
             let program = &self.shader_manager.list[&gpu_bound.shader];
 
             opengl::use_shader_program(program.program_id);
+            opengl::use_vao(gpu_bound.vao);
 
             shaders::set_matrix4(
                 program.program_id,
@@ -297,8 +328,6 @@ impl Renderer {
                 "projection",
                 state.projection.as_slice(),
             );
-
-            opengl::use_vao(gpu_bound.vao);
 
             // TODO: This should be (maybe) stored in the object.
             let mut model = glm::Mat4::identity();
@@ -319,6 +348,8 @@ impl Renderer {
                 });
 
             unsafe {
+                gl::Disable(gl::BLEND);
+
                 match obj.mode {
                     DrawMode::Triangles => {
                         if let Some(ebo) = gpu_bound.ebo {
@@ -350,26 +381,28 @@ impl Renderer {
                 }
             }
         }
+
+        // Activate the text shader.
+        let program = &self.shader_manager.list[&ShaderType::TextShader];
+        opengl::use_shader_program(program.program_id);
+
+        for text in self.text_storage.items.values() {
+            self.default_font.render(text, &program.program_id, &state);
+        };
+
     }
 
-    pub fn remove_mesh(&mut self, id: LoadedObjectId) {
+    pub fn remove_mesh(&mut self, id: GeneratedId) {
         self.object_storage.remove(&id);
     }
 
     /// The method shrink_to_fit will frees any allocated
     /// memory that is not used.
-    pub fn flush(&mut self) {
+    pub fn flush_meshes(&mut self) {
         self.object_storage.clear();
-        self.object_storage.shrink_to_fit();
     }
 
     pub fn clear_screen(&self) {
         opengl::clear(&self.options.default_color);
-    }
-}
-
-impl Drop for Renderer {
-    fn drop(&mut self) {
-        self.flush();
     }
 }

@@ -7,5 +7,10 @@ edition = "2018"
 [dependencies]
 gl = "0.13.0"
 nalgebra-glm = "0.4.2"
-image = "0.22.1"
+rusttype = "0.8.1"
 gltf = "0.13"
+
+[dependencies.image]
+version = "0.22.1"
+default-features = false
+features = ["png_codec"]
