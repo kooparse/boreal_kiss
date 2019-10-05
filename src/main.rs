@@ -60,7 +60,7 @@ fn main() {
             );
         });
 
-        editor.update_events(&mut input, &mut renderer, &state.render_state);
+        editor.update_events(&mut input, &mut renderer, &state.render_state, time);
         state.render_state.view = editor.move_camera(&mut input, window, time);
 
         renderer.clear_screen();

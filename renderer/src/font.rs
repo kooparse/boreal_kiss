@@ -58,7 +58,7 @@ impl Font {
 
         let chars = [ALPHA, ALPHA_UP, NUM, SPECIALS].join("");
 
-        let scale = Scale::uniform(32.);
+        let scale = Scale::uniform(21.);
         let v_metrics = font.v_metrics(scale);
         let offset = point(0., v_metrics.ascent);
 

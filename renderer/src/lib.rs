@@ -3,15 +3,15 @@ mod opengl;
 pub mod primitives;
 mod ray;
 mod shaders;
-mod texture;
-mod vertex;
 mod storage;
 mod text;
+mod texture;
 mod utils;
+mod vertex;
 
-use crate::text::Text;
-pub use crate::storage::{Storage, GeneratedId};
 use crate::font::Font;
+pub use crate::storage::{GeneratedId, Storage};
+use crate::text::Text;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
 use ray::Ray;
@@ -32,8 +32,13 @@ pub struct Pos3D(pub f32, pub f32, pub f32);
 pub struct Rgba(pub f32, pub f32, pub f32, pub f32);
 
 /// Define RGB color.
-#[derive(Default)]
 pub struct Rgb(pub f32, pub f32, pub f32);
+
+impl Default for Rgb {
+    fn default() -> Self {
+        Self(255., 255., 255.)
+    }
+}
 
 #[derive(Debug)]
 pub struct GameResolution {
@@ -192,7 +197,12 @@ impl RenderState {
     }
 }
 
-
+#[derive(Default)]
+pub struct DebugInfo {
+    pub mesh_call_nb: u32,
+    pub text_call_nb: u32,
+    pub gpu_loaded_size: u32,
+}
 
 pub struct Renderer {
     // Some options like resolution, etc...
@@ -203,8 +213,10 @@ pub struct Renderer {
     default_font: Font,
     // Store all the text that should be rendered on the screen.
     text_storage: Storage<Text>,
-    // Store all our shaders here. 
+    // Store all our shaders here.
     shader_manager: ShaderManager,
+
+    pub debug_info: DebugInfo,
 }
 
 impl Renderer {
@@ -227,6 +239,7 @@ impl Renderer {
             default_font: Font::new("assets/fonts/Roboto/Roboto-Regular.ttf"),
             text_storage: Storage::default(),
             shader_manager,
+            debug_info: DebugInfo::default(),
         }
     }
 
@@ -241,15 +254,13 @@ impl Renderer {
 
     /// We push objects into the storage and load data into gl.
     pub fn add_mesh(&mut self, object: Mesh) -> GeneratedId {
-            self.object_storage
-                .push(LoadedObject::from(&object))
-
+        self.object_storage.push(LoadedObject::from(&object))
     }
     pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GeneratedId> {
-        objects.iter().map(|object| {
-            self.object_storage
-                .push(LoadedObject::from(object))
-        }).collect()
+        objects
+            .iter()
+            .map(|object| self.object_storage.push(LoadedObject::from(object)))
+            .collect()
     }
 
     /// Hide a mesh (it will still be loaded in the gpu mem).
@@ -288,7 +299,12 @@ impl Renderer {
         self.add_mesh(primitives::create_line(&name, ray));
     }
 
-    pub fn add_text<T: ToString>(&mut self, text: T, position: Pos2D, color: Rgb) -> GeneratedId {
+    pub fn add_text<T: ToString>(
+        &mut self,
+        text: T,
+        position: Pos2D,
+        color: Rgb,
+    ) -> GeneratedId {
         let text = Text {
             content: text.to_string(),
             position,
@@ -299,11 +315,27 @@ impl Renderer {
         self.text_storage.push(text)
     }
 
+    pub fn update_text<T: ToString>(
+        &mut self,
+        text_to_replace: GeneratedId,
+        text: T,
+        position: Pos2D
+
+    ) {
+        if let Some(to_replace) = self.text_storage.get_mut(&text_to_replace) {
+            to_replace.content = text.to_string();
+            to_replace.position = position;
+        }
+    }
+
+
     pub fn remove_text(&mut self, id: &GeneratedId) {
         self.text_storage.remove(id);
     }
 
     pub fn draw(&mut self, state: &RenderState) {
+        self.debug_info.mesh_call_nb = 0;
+
         // Render all our meshes to the screen.
         for obj in self.object_storage.items.values() {
             if obj.is_hidden {
@@ -349,6 +381,7 @@ impl Renderer {
 
             unsafe {
                 gl::Disable(gl::BLEND);
+                self.debug_info.mesh_call_nb += 1;
 
                 match obj.mode {
                     DrawMode::Triangles => {
@@ -388,8 +421,7 @@ impl Renderer {
 
         for text in self.text_storage.items.values() {
             self.default_font.render(text, &program.program_id, &state);
-        };
-
+        }
     }
 
     pub fn remove_mesh(&mut self, id: GeneratedId) {

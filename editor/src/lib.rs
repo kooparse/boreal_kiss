@@ -7,7 +7,7 @@ use engine::{
     time::Time,
 };
 use nalgebra_glm as glm;
-use renderer::{RenderState, Renderer, Rgb, Pos2D, GeneratedId};
+use renderer::{GeneratedId, Pos2D, RenderState, Renderer, Rgb};
 
 #[derive(Default)]
 pub struct Editor {
@@ -22,8 +22,8 @@ impl Editor {
         renderer.flush_meshes();
         renderer.add_meshes(scene);
 
-        self.debug_text_id = renderer.add_text("Il était une fois", 
-                        Pos2D(20., 20.), Rgb(255., 255., 255.));
+        self.debug_text_id =
+            renderer.add_text("", Pos2D::default(), Rgb::default());
     }
 
     pub fn update_events(
@@ -31,6 +31,7 @@ impl Editor {
         input: &mut Input,
         renderer: &mut Renderer,
         r_state: &RenderState,
+        _time: &Time,
     ) {
         input.pressed_once(Key::Key1, || {
             renderer.flush_meshes();
@@ -49,17 +50,30 @@ impl Editor {
             renderer.add_ray(origin, direction, 100f32);
         });
 
+        let (_, height) =
+            (r_state.resolution.width as f32, r_state.resolution.height as f32);
+
+        let mesh_nb =
+            format!("Meshes rendered: {}", renderer.debug_info.mesh_call_nb);
+
+        renderer.update_text(
+            self.debug_text_id,
+            mesh_nb,
+            Pos2D(5., height - 40.),
+        );
+
         input.pressed_once(Key::M, || {
             if self.is_debug_box {
                 renderer.remove_text(&self.debug_text_id);
                 self.is_debug_box = false;
             } else {
-                self.debug_text_id = renderer
-                    .add_text("Il était une fois", 
-                        Pos2D(20., 20.), Rgb(255., 255., 255.));
+                self.debug_text_id = renderer.add_text(
+                    "Il était une fois",
+                    Pos2D(20., 20.),
+                    Rgb(255., 255., 255.),
+                );
 
                 self.is_debug_box = true;
-
             }
         });
     }

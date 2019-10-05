@@ -48,11 +48,6 @@ pub fn scene_light() -> Vec<Mesh<'static>> {
             0.7,
         ),
         primitives::load_mesh(
-            "assets/models/cube_color/BoxVertexColors.gltf",
-            glm::vec3(2., 0.0, 0.0),
-            0.7,
-        ),
-        primitives::load_mesh(
             "assets/models/cube_tex/BoxTextured.gltf",
             glm::vec3(0., 2., 0.0),
             1.,
