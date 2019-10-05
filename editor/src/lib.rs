@@ -7,12 +7,12 @@ use engine::{
     time::Time,
 };
 use nalgebra_glm as glm;
-use renderer::{GeneratedId, Pos2D, RenderState, Renderer, Rgb};
+use renderer::{GenerationId, Pos2D, RenderState, Renderer, Rgb};
 
 #[derive(Default)]
 pub struct Editor {
     pub camera: Camera,
-    debug_text_id: GeneratedId,
+    debug_text_id: GenerationId,
     is_debug_box: bool,
 }
 

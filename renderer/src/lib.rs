@@ -10,7 +10,7 @@ mod utils;
 mod vertex;
 
 use crate::font::Font;
-pub use crate::storage::{GeneratedId, Storage};
+pub use crate::storage::{GenerationId, Storage};
 use crate::text::Text;
 use nalgebra_glm as glm;
 use opengl::{TexId, EBO, VAO, VBO};
@@ -253,10 +253,10 @@ impl Renderer {
     }
 
     /// We push objects into the storage and load data into gl.
-    pub fn add_mesh(&mut self, object: Mesh) -> GeneratedId {
+    pub fn add_mesh(&mut self, object: Mesh) -> GenerationId {
         self.object_storage.push(LoadedObject::from(&object))
     }
-    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GeneratedId> {
+    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GenerationId> {
         objects
             .iter()
             .map(|object| self.object_storage.push(LoadedObject::from(object)))
@@ -264,21 +264,21 @@ impl Renderer {
     }
 
     /// Hide a mesh (it will still be loaded in the gpu mem).
-    pub fn hide_mesh(&mut self, id: GeneratedId) {
+    pub fn hide_mesh(&mut self, id: GenerationId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             object.is_hidden = true;
         }
     }
 
     /// Show a hidden mesh.
-    pub fn show_mesh(&mut self, id: GeneratedId) {
+    pub fn show_mesh(&mut self, id: GenerationId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             object.is_hidden = false;
         }
     }
 
     /// Toggle show/hidden mesh.
-    pub fn toggle_mesh(&mut self, id: GeneratedId) {
+    pub fn toggle_mesh(&mut self, id: GenerationId) {
         if let Some(object) = self.object_storage.get_mut(&id) {
             if object.is_hidden {
                 self.show_mesh(id);
@@ -304,7 +304,7 @@ impl Renderer {
         text: T,
         position: Pos2D,
         color: Rgb,
-    ) -> GeneratedId {
+    ) -> GenerationId {
         let text = Text {
             content: text.to_string(),
             position,
@@ -317,7 +317,7 @@ impl Renderer {
 
     pub fn update_text<T: ToString>(
         &mut self,
-        text_to_replace: GeneratedId,
+        text_to_replace: GenerationId,
         text: T,
         position: Pos2D
 
@@ -329,7 +329,7 @@ impl Renderer {
     }
 
 
-    pub fn remove_text(&mut self, id: &GeneratedId) {
+    pub fn remove_text(&mut self, id: &GenerationId) {
         self.text_storage.remove(id);
     }
 
@@ -424,7 +424,7 @@ impl Renderer {
         }
     }
 
-    pub fn remove_mesh(&mut self, id: GeneratedId) {
+    pub fn remove_mesh(&mut self, id: GenerationId) {
         self.object_storage.remove(&id);
     }
 
