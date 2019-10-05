@@ -44,11 +44,7 @@ impl Camera {
         glm::look_at(&self.position, &(self.position + self.front), &self.up)
     }
 
-    pub fn update(
-        &mut self,
-        input: &mut Input,
-        time: &Time,
-    ) {
+    pub fn update(&mut self, input: &mut Input, time: &Time) {
         self.update_pos(input, time);
         self.update_spin(input, time);
     }

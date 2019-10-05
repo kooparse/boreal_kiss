@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
-pub type IdType= u32;
-pub type GenerationId= GeneratedId<IdType>;
+pub type IdType = u32;
+pub type GenerationId = GeneratedId<IdType>;
 
 #[derive(Default, Debug, Eq, Hash, Copy, Clone)]
 pub struct GeneratedId<T> {
@@ -12,11 +12,8 @@ pub struct GeneratedId<T> {
 }
 
 impl<T> GeneratedId<T> {
-    fn new(data:T, generation: T) -> Self {
-        Self {
-            data,
-            generation,
-        }
+    fn new(data: T, generation: T) -> Self {
+        Self { data, generation }
     }
 
     fn set_gen(&mut self, generation: T) {
@@ -44,8 +41,7 @@ impl<T: PartialEq> PartialEq for GeneratedId<T> {
     }
 }
 
-
-/// This ids pool has no ABA problem and recycles 
+/// This ids pool has no ABA problem and recycles
 #[derive(Default)]
 pub struct IdentifyGeneratorPool {
     cursor_id: GenerationId,
@@ -58,10 +54,8 @@ impl IdentifyGeneratorPool {
         self.generation_counter += 1;
 
         if self.unused_ids.is_empty() {
-            self.cursor_id = GenerationId::new(
-                *self.cursor_id + 1,
-                self.generation_counter,
-            );
+            self.cursor_id =
+                GenerationId::new(*self.cursor_id + 1, self.generation_counter);
 
             self.cursor_id
         } else {
@@ -69,7 +63,6 @@ impl IdentifyGeneratorPool {
             unused_id.set_gen(self.generation_counter);
             unused_id
         }
-
     }
 
     pub fn remove_id(&mut self, id: GenerationId) {
@@ -84,7 +77,6 @@ impl IdentifyGeneratorPool {
         self.unused_ids.shrink_to_fit();
     }
 }
-
 
 pub struct Storage<T> {
     id_manager: IdentifyGeneratorPool,
@@ -109,10 +101,9 @@ impl<T> Storage<T> {
         self.items.shrink_to_fit();
 
         self.id_manager.clear();
-
     }
 
-    pub fn get_mut(&mut self, item_id: &GenerationId) -> Option<&mut T>{
+    pub fn get_mut(&mut self, item_id: &GenerationId) -> Option<&mut T> {
         self.items.get_mut(item_id)
     }
 }
@@ -213,5 +204,4 @@ mod tests {
         assert_eq!(store.get_mut(&id_c).is_none(), true);
         assert_eq!(store.items.len(), 0);
     }
-
 }

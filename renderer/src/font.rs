@@ -1,14 +1,11 @@
 use crate::{
-    utils,
-    Text,
-    RenderState,
     opengl,
     shaders::{self, ShaderProgramId, ShaderType},
     texture::Texture,
-    GpuBound,
+    utils, GpuBound, RenderState, Text,
 };
-use nalgebra_glm as glm;
 use image::{DynamicImage, Luma};
+use nalgebra_glm as glm;
 use rusttype::{point, FontCollection, HMetrics, Rect, Scale};
 use std::{collections::HashMap, fs::File, io::Read};
 
@@ -45,7 +42,6 @@ impl Font {
             .map(|n| n.to_string())
             .expect("Error while retrieving the font name.");
 
-
         file.read_to_end(&mut font_data)
             .expect("Error while reading the font.");
 
@@ -58,7 +54,7 @@ impl Font {
 
         let chars = [ALPHA, ALPHA_UP, NUM, SPECIALS].join("");
 
-        let scale = Scale::uniform(18.);
+        let scale = Scale::uniform(21.);
         let v_metrics = font.v_metrics(scale);
         let offset = point(0., v_metrics.ascent);
 
@@ -134,13 +130,22 @@ impl Font {
             };
         });
 
-        Self { charachers, space, name }
+        Self {
+            charachers,
+            space,
+            name,
+        }
     }
 
-    /// This won't return the entire gpu_bound, but only what's 
-    /// necessary. We won't clone the gpu_bound, because it would 
+    /// This won't return the entire gpu_bound, but only what's
+    /// necessary. We won't clone the gpu_bound, because it would
     /// call a drop... and clear vao/vbo on opengl.
-    pub fn render(&self, text: &Text, program_id: &ShaderProgramId, r_state: &RenderState) {
+    pub fn render(
+        &self,
+        text: &Text,
+        program_id: &ShaderProgramId,
+        r_state: &RenderState,
+    ) {
         let content: Vec<&str> = text.content.split("").collect();
         let mut advance = 0.;
         let padding = 0.;
@@ -169,7 +174,6 @@ impl Font {
                 let tex_id = character.gpu_bound.tex_ids[0];
                 let len = character.gpu_bound.primitives_len;
 
-
                 opengl::use_vao(vao);
 
                 // We're going to have only one texture (the one with the letter),
@@ -187,23 +191,13 @@ impl Font {
                 let mut model = glm::Mat4::identity();
                 model = glm::translate(&model, &glm::vec3(x, y, 0.));
 
-                shaders::set_matrix4(
-                    *program_id,
-                    "model",
-                    model.as_slice(),
-                );
+                shaders::set_matrix4(*program_id, "model", model.as_slice());
 
                 unsafe {
-                    gl::DrawArrays(
-                        gl::TRIANGLES,
-                        0,
-                        len as i32,
-                    );
+                    gl::DrawArrays(gl::TRIANGLES, 0, len as i32);
                 }
 
-
                 advance += character.h_metrics.advance_width;
-
             } else {
                 advance += self.space;
             }

@@ -319,15 +319,13 @@ impl Renderer {
         &mut self,
         text_to_replace: GenerationId,
         text: T,
-        position: Pos2D
-
+        position: Pos2D,
     ) {
         if let Some(to_replace) = self.text_storage.get_mut(&text_to_replace) {
             to_replace.content = text.to_string();
             to_replace.position = position;
         }
     }
-
 
     pub fn remove_text(&mut self, id: &GenerationId) {
         self.text_storage.remove(id);

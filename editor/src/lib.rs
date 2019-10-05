@@ -50,8 +50,10 @@ impl Editor {
             renderer.add_ray(origin, direction, 100f32);
         });
 
-        let (_, height) =
-            (r_state.resolution.width as f32, r_state.resolution.height as f32);
+        let (_, height) = (
+            r_state.resolution.width as f32,
+            r_state.resolution.height as f32,
+        );
 
         let mesh_nb =
             format!("Meshes rendered: {}", renderer.debug_info.mesh_call_nb);
