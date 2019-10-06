@@ -155,13 +155,13 @@ pub fn create_grid<'t, 'n>(
     let mut list: Vec<glm::TVec3<f32>> = vec![];
     let ratio = (dim / 2) as f32;
 
-    for i in 0..(dim + 1) {
+    for i in 0..=dim {
         // Rows
         let r = (i as f32 / ratio) * scale;
         list.push(glm::vec3(-scale, 0., -scale + r));
         list.push(glm::vec3(scale, 0., -scale + r));
 
-        for j in 0..(dim + 1) {
+        for j in 0..=dim {
             // Columns
             let c = (j as f32 / ratio) * scale;
             list.push(glm::vec3(-scale + c, 0., scale));

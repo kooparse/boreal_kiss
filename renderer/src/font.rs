@@ -143,7 +143,7 @@ impl Font {
     pub fn render(
         &self,
         text: &Text,
-        program_id: &ShaderProgramId,
+        program_id: ShaderProgramId,
         r_state: &RenderState,
     ) {
         let content: Vec<&str> = text.content.split("").collect();
@@ -151,7 +151,7 @@ impl Font {
         let padding = 0.;
 
         shaders::set_matrix4(
-            *program_id,
+            program_id,
             "projection",
             utils::ortho_proj(r_state).as_slice(),
         );
@@ -179,11 +179,11 @@ impl Font {
                 // We're going to have only one texture (the one with the letter),
                 // so it's cool to hardcoded the sampler number. Same for
                 // the texture.
-                shaders::set_sampler(*program_id, 0);
+                shaders::set_sampler(program_id, 0);
                 opengl::bind_texture(tex_id, 0);
 
                 shaders::set_vec3(
-                    *program_id,
+                    program_id,
                     "text_color",
                     &[text.color.r, text.color.g, text.color.b]
                 );
@@ -191,7 +191,7 @@ impl Font {
                 let mut model = glm::Mat4::identity();
                 model = glm::translate(&model, &glm::vec3(x, y, 0.));
 
-                shaders::set_matrix4(*program_id, "model", model.as_slice());
+                shaders::set_matrix4(program_id, "model", model.as_slice());
 
                 unsafe {
                     gl::DrawArrays(gl::TRIANGLES, 0, len as i32);

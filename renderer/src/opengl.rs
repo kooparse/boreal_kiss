@@ -44,18 +44,20 @@ pub fn set_viewport(width: i32, height: i32) {
 /// Set multisampling.
 pub fn set_multisampling(enabled: bool) {
     unsafe {
-        match enabled {
-            true => gl::Enable(gl::MULTISAMPLE),
-            false => gl::Disable(gl::MULTISAMPLE),
+        if enabled { 
+            gl::Enable(gl::MULTISAMPLE);
+        } else {
+            gl::Disable(gl::MULTISAMPLE);
         }
     }
 }
 /// Set depth testing.
 pub fn set_depth_testing(enabled: bool) {
     unsafe {
-        match enabled {
-            true => gl::Enable(gl::DEPTH_TEST),
-            false => gl::Disable(gl::DEPTH_TEST),
+        if enabled { 
+           gl::Enable(gl::DEPTH_TEST);
+        } else {
+            gl::Disable(gl::DEPTH_TEST);
         }
     }
 }
@@ -189,12 +191,12 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture, is_font: bool) -> TexId {
     use_vao(vao);
     let tex_id = generate_texture();
 
-    let mut c_type = gl::RGBA;
+    // Mono color for font.
+    let color_format = if is_font { gl::RED } else { gl::RGBA };
 
     // TODO: Why?
     if is_font {
         gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-        c_type = gl::RED;
     }
 
     gl::BindTexture(gl::TEXTURE_2D, tex_id);
@@ -215,11 +217,11 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture, is_font: bool) -> TexId {
     gl::TexImage2D(
         gl::TEXTURE_2D,
         0,
-        c_type as i32,
+        color_format as i32,
         dim.0 as i32,
         dim.1 as i32,
         0,
-        c_type,
+        color_format,
         gl::UNSIGNED_BYTE,
         data.as_ptr() as *const c_void,
     );

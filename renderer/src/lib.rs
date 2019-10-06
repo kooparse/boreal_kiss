@@ -131,7 +131,7 @@ impl<'n> From<&Mesh<'n>> for LoadedObject {
             vbo,
             ebo,
             primitives_len,
-            shader: object.shader_type.clone(),
+            shader: object.shader_type,
             tex_ids,
         };
 
@@ -255,21 +255,21 @@ impl Renderer {
 
     /// Hide a mesh (it will still be loaded in the gpu mem).
     pub fn hide_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(&id) {
+        if let Some(object) = self.object_storage.get_mut(id) {
             object.is_hidden = true;
         }
     }
 
     /// Show a hidden mesh.
     pub fn show_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(&id) {
+        if let Some(object) = self.object_storage.get_mut(id) {
             object.is_hidden = false;
         }
     }
 
     /// Toggle show/hidden mesh.
     pub fn toggle_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(&id) {
+        if let Some(object) = self.object_storage.get_mut(id) {
             if object.is_hidden {
                 self.show_mesh(id);
             } else {
@@ -311,13 +311,13 @@ impl Renderer {
         text: T,
         position: Pos2D,
     ) {
-        if let Some(to_replace) = self.text_storage.get_mut(&text_to_replace) {
+        if let Some(to_replace) = self.text_storage.get_mut(text_to_replace) {
             to_replace.content = text.to_string();
             to_replace.position = position;
         }
     }
 
-    pub fn remove_text(&mut self, id: &GenerationId) {
+    pub fn remove_text(&mut self, id: GenerationId) {
         self.text_storage.remove(id);
     }
 
@@ -408,12 +408,12 @@ impl Renderer {
         opengl::use_shader_program(program.program_id);
 
         for text in self.text_storage.items.values() {
-            self.default_font.render(text, &program.program_id, &state);
+            self.default_font.render(text, program.program_id, &state);
         }
     }
 
     pub fn remove_mesh(&mut self, id: GenerationId) {
-        self.object_storage.remove(&id);
+        self.object_storage.remove(id);
     }
 
     /// The method shrink_to_fit will frees any allocated

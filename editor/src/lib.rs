@@ -72,7 +72,7 @@ impl Editor {
 
         input.pressed_once(Key::M, || {
             if self.is_debug_box {
-                renderer.remove_text(&self.debug_text_id);
+                renderer.remove_text(self.debug_text_id);
                 self.is_debug_box = false;
             } else {
                 self.debug_text_id = renderer.add_text(

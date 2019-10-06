@@ -91,8 +91,8 @@ impl<T> Storage<T> {
         item_id
     }
 
-    pub fn remove(&mut self, item_id: &GenerationId) {
-        self.id_manager.remove_id(*item_id);
+    pub fn remove(&mut self, item_id: GenerationId) {
+        self.id_manager.remove_id(item_id);
         self.items.remove(&item_id);
     }
 
@@ -103,8 +103,8 @@ impl<T> Storage<T> {
         self.id_manager.clear();
     }
 
-    pub fn get_mut(&mut self, item_id: &GenerationId) -> Option<&mut T> {
-        self.items.get_mut(item_id)
+    pub fn get_mut(&mut self, item_id: GenerationId) -> Option<&mut T> {
+        self.items.get_mut(&item_id)
     }
 }
 
