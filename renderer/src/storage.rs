@@ -162,12 +162,12 @@ mod tests {
         let id_a = store.push(a);
         let id_b = store.push(b);
 
-        store.remove(&id_a);
+        store.remove(id_a);
 
-        let my_test_type = store.get_mut(&id_a);
+        let my_test_type = store.get_mut(id_a);
         assert_eq!(my_test_type.is_some(), false);
 
-        let my_test_type = store.get_mut(&id_b);
+        let my_test_type = store.get_mut(id_b);
         assert_eq!(my_test_type.is_some(), true);
     }
 
@@ -181,7 +181,7 @@ mod tests {
         let id_a = store.push(a);
         let _id_b = store.push(b);
 
-        store.remove(&id_a);
+        store.remove(id_a);
         let id_c = store.push(c);
 
         assert_eq!(id_c, GenerationId::new(1, 3));
@@ -199,9 +199,9 @@ mod tests {
         let id_c = store.push(c);
 
         store.clear();
-        assert_eq!(store.get_mut(&id_a).is_none(), true);
-        assert_eq!(store.get_mut(&id_b).is_none(), true);
-        assert_eq!(store.get_mut(&id_c).is_none(), true);
+        assert_eq!(store.get_mut(id_a).is_none(), true);
+        assert_eq!(store.get_mut(id_b).is_none(), true);
+        assert_eq!(store.get_mut(id_c).is_none(), true);
         assert_eq!(store.items.len(), 0);
     }
 }
