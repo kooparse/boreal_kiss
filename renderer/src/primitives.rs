@@ -1,8 +1,11 @@
 use super::{DrawMode, Mesh};
-use crate::ray::Ray;
-use crate::shaders::ShaderType;
-use crate::texture::Texture;
-use crate::vertex::{UVSet, Vertex, UV};
+use crate::{
+    ray::Ray,
+    color::Rgba,
+    shaders::ShaderType,
+    texture::Texture,
+    vertex::{UVSet, Vertex, UV},
+};
 use gltf;
 use nalgebra_glm as glm;
 
@@ -85,7 +88,7 @@ pub fn load_mesh<'n>(
                     read_colors
                         .into_rgba_f32()
                         .map(|color| {
-                            glm::vec4(color[0], color[1], color[2], color[3])
+                            Rgba::new(color[0], color[1], color[2], color[3])
                         })
                         .collect::<_>()
                 })

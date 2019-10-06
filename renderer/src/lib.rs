@@ -3,42 +3,32 @@ mod opengl;
 pub mod primitives;
 mod ray;
 mod shaders;
-mod storage;
+pub mod storage;
 mod text;
 mod texture;
 mod utils;
 mod vertex;
+pub mod color;
 
-use crate::font::Font;
-pub use crate::storage::{GenerationId, Storage};
-use crate::text::Text;
 use nalgebra_glm as glm;
-use opengl::{TexId, EBO, VAO, VBO};
-use ray::Ray;
-use shaders::{ShaderFlags, ShaderManager, ShaderType};
 use std::cmp::min;
 use std::ptr;
-use texture::Texture;
-use vertex::{Vector3, Vertex};
+use crate::{
+    color::{Rgba, Rgb},
+    font::Font,
+    storage::{GenerationId, Storage},
+    text::Text,
+    texture::Texture,
+    vertex::{Vector3, Vertex},
+    opengl::{TexId, EBO, VAO, VBO},
+    ray::Ray,
+    shaders::{ShaderFlags, ShaderManager, ShaderType}
+};
 
 #[derive(Default)]
 pub struct Pos2D(pub f32, pub f32);
 #[derive(Default)]
 pub struct Pos3D(pub f32, pub f32, pub f32);
-
-/// Define RGBA color.
-/// (Sometime, tuple structs are not very elegent).
-#[derive(Default)]
-pub struct Rgba(pub f32, pub f32, pub f32, pub f32);
-
-/// Define RGB color.
-pub struct Rgb(pub f32, pub f32, pub f32);
-
-impl Default for Rgb {
-    fn default() -> Self {
-        Self(255., 255., 255.)
-    }
-}
 
 #[derive(Debug)]
 pub struct GameResolution {

@@ -1,8 +1,8 @@
 use nalgebra_glm as glm;
+use crate::color::Rgba;
 
 pub type Vector3 = glm::TVec3<f32>;
 pub type UV = glm::TVec2<f32>;
-pub type Color = glm::TVec4<f32>;
 
 #[derive(Debug, Default)]
 pub struct UVSet {
@@ -20,7 +20,7 @@ impl UVSet {
 pub struct Vertex {
     pub primitives: Vec<Vector3>,
     pub normals: Vec<Vector3>,
-    pub colors: Vec<Color>,
+    pub colors: Vec<Rgba>,
     pub uv_coords: Vec<UVSet>,
     pub indices: Vec<u32>,
 }

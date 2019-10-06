@@ -185,7 +185,7 @@ impl Font {
                 shaders::set_vec3(
                     *program_id,
                     "text_color",
-                    &[text.color.0, text.color.1, text.color.2],
+                    &[text.color.r, text.color.g, text.color.b]
                 );
 
                 let mut model = glm::Mat4::identity();

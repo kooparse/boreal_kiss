@@ -1,7 +1,10 @@
-use super::shaders::ShaderProgramId;
-use super::texture::Texture;
-use super::vertex::{Color, Vector3, UV};
-use super::{Mesh, Rgba};
+use crate::{
+    color::Rgba, 
+    texture::Texture,
+    vertex::{Vector3, UV},
+    shaders::ShaderProgramId
+};
+use super::Mesh;
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
@@ -59,7 +62,7 @@ pub fn set_depth_testing(enabled: bool) {
 
 pub fn clear(color: &Rgba) {
     unsafe {
-        gl::ClearColor(color.0, color.1, color.2, color.3);
+        gl::ClearColor(color.r, color.g, color.b, color.a);
         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
     }
 }
@@ -92,7 +95,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
 
     let mut total_size = (object.vertex.primitives.len()
         * mem::size_of::<Vector3>())
-        + (object.vertex.colors.len() * mem::size_of::<Color>());
+        + (object.vertex.colors.len() * mem::size_of::<Rgba>());
 
     object.vertex.uv_coords.iter().for_each(|set| {
         total_size += set.coords.len() * mem::size_of::<UV>();
@@ -128,12 +131,12 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
             data_cursor,
-            (object.vertex.colors.len() * mem::size_of::<Color>()) as isize,
+            (object.vertex.colors.len() * mem::size_of::<Rgba>()) as isize,
             object.vertex.colors.as_ptr() as *const _,
         );
 
         data_cursor +=
-            (object.vertex.colors.len() * mem::size_of::<Color>()) as isize;
+            (object.vertex.colors.len() * mem::size_of::<Rgba>()) as isize;
 
         // Texture data.
         object.vertex.uv_coords.iter().for_each(|set| {
@@ -302,13 +305,13 @@ pub fn load_object_to_gpu(
             4,
             gl::FLOAT,
             gl::FALSE,
-            mem::size_of::<Color>() as i32,
+            mem::size_of::<Rgba>() as i32,
             data_cursor as *const _,
         );
         gl::EnableVertexAttribArray(1);
 
         location += 1;
-        data_cursor += object.vertex.colors.len() * mem::size_of::<Color>();
+        data_cursor += object.vertex.colors.len() * mem::size_of::<Rgba>();
 
         // UV Coords.
         for set in object.vertex.uv_coords.iter() {

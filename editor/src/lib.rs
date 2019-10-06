@@ -7,7 +7,13 @@ use engine::{
     time::Time,
 };
 use nalgebra_glm as glm;
-use renderer::{GenerationId, Pos2D, RenderState, Renderer, Rgb};
+use renderer::{
+    storage::GenerationId, 
+    Pos2D, 
+    RenderState, 
+    Renderer, 
+    color::Rgb
+};
 
 #[derive(Default)]
 pub struct Editor {
@@ -72,7 +78,7 @@ impl Editor {
                 self.debug_text_id = renderer.add_text(
                     "Il était une fois",
                     Pos2D(20., 20.),
-                    Rgb(255., 255., 255.),
+                    Rgb::new(1., 1., 1.),
                 );
 
                 self.is_debug_box = true;

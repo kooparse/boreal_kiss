@@ -11,7 +11,7 @@ use glutin::{
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{GameResolution, RendererOptions, Rgba};
+use renderer::{GameResolution, RendererOptions, color::Rgba};
 use std::convert::From;
 
 /// Construct a window for all desktop with the
@@ -109,7 +109,7 @@ impl PlatformWrapper for WinitPlatform {
         RendererOptions::new(
             pixel_format.multisampling.is_some(),
             true,
-            Rgba(0.1, 0.1, 0.2, 1.0),
+            Rgba::new(0.1, 0.1, 0.2, 1.0),
         )
     }
 
