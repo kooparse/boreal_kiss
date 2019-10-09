@@ -11,6 +11,7 @@ use renderer::{
     storage::GenerationId,
     text::Text,
     Pos2D, 
+    color::Rgb,
     RenderState, 
     Renderer, 
 };
@@ -30,7 +31,7 @@ impl Editor {
 
         self.nb_mesh_calls = renderer.add_text(Text {
             position: Pos2D(10., 750.),
-            font_size: 18.,
+            font_size: 21.,
             .. Text::default()
         });
 
@@ -69,12 +70,18 @@ impl Editor {
             renderer.add_ray(origin, direction, 100f32);
         });
 
-            
         renderer.update_text(self.nb_mesh_calls).content = 
             format!("Meshes rendered: {}", renderer.debug_info.draw_call);
 
-        renderer.update_text(self.framerate).content = 
-            format!("Tick: {} ms", (time.dt * 1000.).round());
+        let framerate = (time.dt * 1000.).round();
+        let framerate_text = renderer.update_text(self.framerate);
+
+        framerate_text.content = 
+            format!("Tick: {} ms", framerate);
+
+        if framerate > 16. {
+            framerate_text.color = Rgb::new(1., 0., 0.);
+        }
 
     }
 

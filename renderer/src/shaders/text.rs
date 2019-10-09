@@ -27,20 +27,12 @@ pub const FRAGMENT_SOURCE: &str = r#"
     uniform vec3 text_color;
     uniform float font_size;
 
-    const float width = 0.5;
-    const float edge = 0.1;
+    float width = 0.5; 
+    float edge = 0.1 / (font_size * 2);
 
     void main() {    
-
-        // float sample = texture(texture0, TexCoords).r;
-        // float scale = 1.0; 
-        // float signedDistance = (sample - 0.5) * scale;
-
-        // float color = clamp(signedDistance + 0.5, 0.0, 1.0);
-        // float alpha = clamp(signedDistance + 0.5 + scale * 0.125, 0.0, 1.0);
-
-        float signed_distance = texture(texture0, TexCoords).r;
-        float alpha = smoothstep(width, width + edge, signed_distance);
+        float distance = texture(texture0, TexCoords).r;
+        float alpha = smoothstep(width - edge, width + edge, distance);
         FragColor = vec4(text_color, alpha);
     }  
 "#;
