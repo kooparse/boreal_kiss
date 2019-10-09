@@ -5,7 +5,7 @@ use super::{Pos2D, Rgb};
 #[derive(Default)]
 pub struct Text {
     pub content: String,
+    pub font_size: f32,
     pub position: Pos2D,
-    pub font_attached: String,
     pub color: Rgb,
 }

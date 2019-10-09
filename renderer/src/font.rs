@@ -1,206 +1,182 @@
 use crate::{
     opengl,
     shaders::{self, ShaderProgramId, ShaderType},
+    text::Text,
     texture::Texture,
-    utils, GpuBound, RenderState, Text,
+    GpuBound,
 };
-use image::{DynamicImage, Luma};
 use nalgebra_glm as glm;
-use rusttype::{point, FontCollection, HMetrics, Rect, Scale};
-use std::{collections::HashMap, fs::File, io::Read};
+use serde::Deserialize;
+use std::{collections::HashMap, fs::File, io::BufReader};
 
-const ALPHA: &str = "abcdefghijklmnopqrstuvwxyzéèôçñ";
-const ALPHA_UP: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZÉÈÔÇÑ";
-const NUM: &str = "1234567890";
-const SPECIALS: &str = "!?.,:;'(){}[]/+|_-\"\\ ";
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Character {
-    letter: String,
-    h_metrics: HMetrics,
-    bounding_box: Rect<i32>,
-    texture: Texture,
-    gpu_bound: GpuBound,
+    #[serde(alias = "x")]
+    atlas_pos_x: f32,
+    #[serde(alias = "y")]
+    atlas_pos_y: f32,
+    width: f32,
+    height: f32,
+    #[serde(alias = "originY")]
+    origin_y: f32,
+    #[serde(alias = "originX")]
+    origin_x: f32,
+    advance: f32,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Font {
-    charachers: HashMap<String, Character>,
-    space: f32,
-    pub name: String,
+    name: String,
+    characters: HashMap<String, Character>,
+    #[serde(skip_deserializing)]
+    atlas_texture: Texture,
+    #[serde(alias = "width")]
+    atlas_width: f32,
+    #[serde(alias = "height")]
+    atlas_height: f32,
+    #[serde(alias = "bold")]
+    is_bold: bool,
+    size: f32,
+    #[serde(skip_deserializing)]
+    text_caching: HashMap<String, GpuBound>,
 }
 
 impl Font {
-    pub fn new(font_path: &str) -> Self {
-        let mut font_data = vec![];
-        let mut file =
-            File::open(font_path).expect("Error while openning the font.");
+    /// Take a metadata path and the texture atlas path.
+    pub fn new(metadata: &str, atlas: &str) -> Self {
+        let file =
+            File::open(metadata).expect("Error while openning the font.");
 
-        let name: String = font_path
-            .split("/")
-            .collect::<Vec<&str>>()
-            .last()
-            .map(|n| n.to_string())
-            .expect("Error while retrieving the font name.");
+        let reader = BufReader::new(file);
 
-        file.read_to_end(&mut font_data)
-            .expect("Error while reading the font.");
+        let mut font: Font =
+            serde_json::from_reader(reader).expect("Error while reading JSON");
 
-        let collection = FontCollection::from_bytes(&font_data)
-            .expect("Error while constructing the font collection.");
+        let texture = Texture::from_file(atlas);
+        font.atlas_texture = texture;
 
-        let font = collection
-            .into_font()
-            .expect("Error while returning a proper font.");
-
-        let chars = [ALPHA, ALPHA_UP, NUM, SPECIALS].join("");
-
-        let scale = Scale::uniform(21.);
-        let v_metrics = font.v_metrics(scale);
-        let offset = point(0., v_metrics.ascent);
-
-        let glyphs: Vec<_> = font.layout(&chars, scale, offset).collect();
-
-        let mut charachers = HashMap::new();
-        let mut space: f32 = 0.;
-
-        glyphs.iter().enumerate().for_each(|(index, glyph)| {
-            let letters: Vec<&str> = chars.split("").collect();
-
-            let font = glyph.font().unwrap();
-            let v_metrics = font.v_metrics(scale);
-            let h_metrics = glyph.unpositioned().h_metrics();
-
-            if glyph.pixel_bounding_box().is_none() {
-                space = h_metrics.advance_width;
-            }
-
-            if let Some(bounding_box) = glyph.pixel_bounding_box() {
-                let width = bounding_box.width() as u32;
-                let height =
-                    (v_metrics.ascent - v_metrics.descent).ceil() as u32;
-
-                let mut img = DynamicImage::new_luma8(width, height).to_luma();
-
-                glyph.draw(|x, y, alpha| {
-                    img.put_pixel(
-                        x,
-                        y + bounding_box.min.y as u32,
-                        Luma([(alpha * 255.) as _]),
-                    )
-                });
-
-                // First character is escape.
-                let letter = letters[index + 1].to_owned();
-
-                #[cfg_attr(rustfmt, rustfmt_skip)]
-                let vertices = [
-                    0., height as f32, 0.0, 0.0,
-                    0.,  0., 0.0, 1.0,
-                    width as f32, 0., 1.0, 1.0,
-
-                    0., height as f32, 0.0, 0.0,
-                    width as f32, 0., 1.0, 1.0,
-                    width as f32, height as f32, 1.0, 0.0,
-                ];
-
-                let texture = Texture::new((width, height), img.into_vec());
-
-                // Generate the Quad.
-                let (vao, vbo, tex_id) =
-                    opengl::load_font_to_gpu(&vertices, &texture);
-
-                let gpu_bound = GpuBound {
-                    vao,
-                    vbo,
-                    ebo: None,
-                    tex_ids: vec![tex_id],
-                    primitives_len: vertices.len(),
-                    shader: ShaderType::TextShader,
-                };
-
-                let character = Character {
-                    letter: letter.clone(),
-                    texture,
-                    h_metrics,
-                    bounding_box,
-                    gpu_bound,
-                };
-
-                charachers.insert(letter, character);
-            };
-        });
-
-        Self {
-            charachers,
-            space,
-            name,
-        }
+        font
     }
 
-    /// This won't return the entire gpu_bound, but only what's
-    /// necessary. We won't clone the gpu_bound, because it would
-    /// call a drop... and clear vao/vbo on opengl.
-    pub fn render(
-        &self,
-        text: &Text,
-        program_id: ShaderProgramId,
-        r_state: &RenderState,
-    ) {
-        let content: Vec<&str> = text.content.split("").collect();
-        let mut advance = 0.;
-        let padding = 0.;
+    pub fn render(&mut self, text: &Text, text_shader: ShaderProgramId) {
+        let scale = 1.0;
 
-        shaders::set_matrix4(
-            program_id,
-            "projection",
-            utils::ortho_proj(r_state).as_slice(),
-        );
-
-        // Activate blend mode for the transparency.
-        unsafe {
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        // Caching system.
+        // If this text was previously rendered, we just use our existing
+        // gpu data.
+        if let Some(gpu_bound) = self.text_caching.get(&text.content) {
+            self.to_opengl(&text, &gpu_bound, text_shader);
+            return;
         }
 
-        content.into_iter().for_each(|letter| {
-            if let Some(character) = self.charachers.get(letter) {
-                let x = text.position.0
-                    + character.h_metrics.left_side_bearing
-                    + advance
-                    + padding;
-                let y = text.position.1 + padding;
+        let mut cursor = 0.;
+        let mut vertices: Vec<f32> = vec![];
 
-                let vao = character.gpu_bound.vao;
-                let tex_id = character.gpu_bound.tex_ids[0];
-                let len = character.gpu_bound.primitives_len;
-
-                opengl::use_vao(vao);
-
-                // We're going to have only one texture (the one with the letter),
-                // so it's cool to hardcoded the sampler number. Same for
-                // the texture.
-                shaders::set_sampler(program_id, 0);
-                opengl::bind_texture(tex_id, 0);
-
-                shaders::set_vec3(
-                    program_id,
-                    "text_color",
-                    &[text.color.r, text.color.g, text.color.b]
-                );
-
-                let mut model = glm::Mat4::identity();
-                model = glm::translate(&model, &glm::vec3(x, y, 0.));
-
-                shaders::set_matrix4(program_id, "model", model.as_slice());
-
-                unsafe {
-                    gl::DrawArrays(gl::TRIANGLES, 0, len as i32);
+        text.content
+            .split("")
+            .collect::<Vec<&str>>()
+            .into_iter()
+            .for_each(|letter| {
+                // If character not found in our atlas, we skip.
+                if self.characters.get(letter).is_none() {
+                    println!("Character {} skipped.", letter);
+                    return;
                 }
 
-                advance += character.h_metrics.advance_width;
-            } else {
-                advance += self.space;
-            }
-        });
+                // We can unwrap it safely now.
+                let letter = self.characters.get(letter).unwrap();
+
+                let (top_left, top_right, bottom_left, bottom_right) = {
+                    let top_left = (
+                        letter.atlas_pos_x / self.atlas_width,
+                        letter.atlas_pos_y / self.atlas_height,
+                    );
+
+                    let top_right = (
+                        top_left.0 + (letter.width / self.atlas_width),
+                        top_left.1,
+                    );
+
+                    let bottom_left = (
+                        top_left.0,
+                        top_left.1 + (letter.height / self.atlas_height),
+                    );
+
+                    let bottom_right = (top_right.0, bottom_left.1);
+
+                    (top_left, top_right, bottom_left, bottom_right)
+                };
+
+                let x_pos = (cursor - letter.origin_x) * scale;
+                // 0 is our baseline.
+                let y_pos = (0. - (letter.height - letter.origin_y)) * scale;
+                let width = letter.width * scale;
+                let height = letter.height * scale;
+
+                // Quad data for our character.
+                #[rustfmt::skip]
+                let character_quad: [f32; 24] = [
+                    x_pos, y_pos + height,  top_left.0, top_left.1,
+                    x_pos,  y_pos,          bottom_left.0, bottom_left.1,
+                    x_pos + width, y_pos,   bottom_right.0, bottom_right.1,
+
+                    x_pos, y_pos + height,  top_left.0, top_left.1,
+                    x_pos + width, y_pos,   bottom_right.0, bottom_right.1,
+                    x_pos + width, y_pos + height, top_right.0, top_right.1,
+                ];
+
+                vertices.extend_from_slice(&character_quad);
+                cursor += letter.advance;
+            });
+
+        let (vao, vbo, tex_id) =
+            opengl::load_font_to_gpu(&vertices, &self.atlas_texture);
+
+        let gpu_bound = GpuBound {
+            vao,
+            vbo,
+            ebo: None,
+            tex_ids: vec![tex_id],
+            primitives_len: vertices.len(),
+            shader: ShaderType::TextShader,
+        };
+
+        self.to_opengl(&text, &gpu_bound, text_shader);
+        self.text_caching.insert(text.content.clone(), gpu_bound);
+    }
+
+    fn to_opengl(
+        &self,
+        text: &Text,
+        gpu_bound: &GpuBound,
+        text_shader: ShaderProgramId,
+    ) {
+        let Text {
+            position, color, font_size, ..
+        } = text;
+
+        opengl::use_vao(gpu_bound.vao);
+        opengl::bind_texture(gpu_bound.tex_ids[0], 0);
+
+        let mut model = glm::Mat4::identity();
+        model = glm::translate(&model, &glm::vec3(position.0, position.1, 0.));
+
+        shaders::set_sampler(text_shader, 0);
+        shaders::set_matrix4(text_shader, "model", model.as_slice());
+        shaders::set_f32(text_shader, "font_size", font_size / self.size);
+        shaders::set_vec3(
+            text_shader,
+            "text_color",
+            &[color.r, color.g, color.b],
+        );
+
+        unsafe {
+            gl::Disable(gl::DEPTH_TEST);
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+
+            gl::DrawArrays(gl::TRIANGLES, 0, gpu_bound.primitives_len as i32);
+            gl::Enable(gl::DEPTH_TEST);
+        }
     }
 }

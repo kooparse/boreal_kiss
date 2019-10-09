@@ -8,18 +8,18 @@ use engine::{
 };
 use nalgebra_glm as glm;
 use renderer::{
-    storage::GenerationId, 
+    storage::GenerationId,
+    text::Text,
     Pos2D, 
     RenderState, 
     Renderer, 
-    color::Rgb
 };
 
 #[derive(Default)]
 pub struct Editor {
     pub camera: Camera,
-    debug_text_id: GenerationId,
-    is_debug_box: bool,
+    framerate: GenerationId,
+    nb_mesh_calls: GenerationId,
 }
 
 impl Editor {
@@ -28,8 +28,17 @@ impl Editor {
         renderer.flush_meshes();
         renderer.add_meshes(scene);
 
-        self.debug_text_id =
-            renderer.add_text("", Pos2D::default(), Rgb::default());
+        self.nb_mesh_calls = renderer.add_text(Text {
+            position: Pos2D(10., 750.),
+            font_size: 18.,
+            .. Text::default()
+        });
+
+        self.framerate = renderer.add_text(Text {
+            position: Pos2D(10., 730.),
+            font_size: 18.,
+            .. Text::default()
+        });
     }
 
     pub fn update_events(
@@ -37,7 +46,7 @@ impl Editor {
         input: &mut Input,
         renderer: &mut Renderer,
         r_state: &RenderState,
-        _time: &Time,
+        time: &Time,
     ) {
         input.pressed_once(Key::Key1, || {
             renderer.flush_meshes();
@@ -51,39 +60,22 @@ impl Editor {
             renderer.add_meshes(scene);
         });
 
+        input.pressed_once(Key::Key0, || {
+            renderer.toggle_wireframe();
+        });
+
         input.clicked(MouseButton::Left, |cursor| {
             let (origin, direction) = self.cast_ray(cursor, r_state);
             renderer.add_ray(origin, direction, 100f32);
         });
 
-        let (_, height) = (
-            r_state.resolution.width as f32,
-            r_state.resolution.height as f32,
-        );
+            
+        renderer.update_text(self.nb_mesh_calls).content = 
+            format!("Meshes rendered: {}", renderer.debug_info.draw_call);
 
-        let mesh_nb =
-            format!("Meshes rendered: {}", renderer.debug_info.mesh_call_nb);
+        renderer.update_text(self.framerate).content = 
+            format!("Tick: {} ms", (time.dt * 1000.).round());
 
-        renderer.update_text(
-            self.debug_text_id,
-            mesh_nb,
-            Pos2D(5., height - 40.),
-        );
-
-        input.pressed_once(Key::M, || {
-            if self.is_debug_box {
-                renderer.remove_text(self.debug_text_id);
-                self.is_debug_box = false;
-            } else {
-                self.debug_text_id = renderer.add_text(
-                    "Il était une fois",
-                    Pos2D(20., 20.),
-                    Rgb::new(1., 1., 1.),
-                );
-
-                self.is_debug_box = true;
-            }
-        });
     }
 
     pub fn move_camera(

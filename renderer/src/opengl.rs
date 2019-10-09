@@ -191,18 +191,19 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture, is_font: bool) -> TexId {
     use_vao(vao);
     let tex_id = generate_texture();
 
-    // Mono color for font.
-    let color_format = if is_font { gl::RED } else { gl::RGBA };
+    let color_format = gl::RGBA;
 
-    // TODO: Why?
-    if is_font {
+    let clamp = if is_font {
         gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-    }
+        gl::CLAMP_TO_EDGE
+    } else {
+        gl::REPEAT
+    } as i32;
 
     gl::BindTexture(gl::TEXTURE_2D, tex_id);
 
-    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
-    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, clamp);
+    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, clamp);
     gl::TexParameteri(
         gl::TEXTURE_2D,
         gl::TEXTURE_MIN_FILTER,
@@ -226,21 +227,22 @@ pub unsafe fn load_tex_to_gpu(vao: VAO, tex: &Texture, is_font: bool) -> TexId {
         data.as_ptr() as *const c_void,
     );
 
-    gl::GenerateMipmap(gl::TEXTURE_2D);
+    if !is_font {
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+    }
 
     tex_id
 }
 
 pub fn load_font_to_gpu(
-    vertices: &[f32; 24],
-    texture: &Texture,
+    vertices: &Vec<f32>,
+    texture_atlas: &Texture,
 ) -> (VAO, VBO, TexId) {
     let vao = gen_vao();
     use_vao(vao);
 
     unsafe {
-        let tex_id = load_tex_to_gpu(vao, texture, true);
-
+        let tex_id = load_tex_to_gpu(vao, texture_atlas, true);
         let vbo = gen_buffer();
 
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);

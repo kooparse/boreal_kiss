@@ -4,7 +4,7 @@ pub mod primitives;
 mod ray;
 mod shaders;
 pub mod storage;
-mod text;
+pub mod text;
 mod texture;
 mod utils;
 mod vertex;
@@ -189,9 +189,9 @@ impl RenderState {
 
 #[derive(Default)]
 pub struct DebugInfo {
-    pub mesh_call_nb: u32,
-    pub text_call_nb: u32,
+    pub draw_call: u32,
     pub gpu_loaded_size: u32,
+    pub is_wireframe: bool,
 }
 
 pub struct Renderer {
@@ -223,13 +223,18 @@ impl Renderer {
         // Compile all shaders and create corresponding vao.
         let shader_manager = ShaderManager::new();
 
+        let default_font = Font::new(
+            "assets/fonts/Helvetica/helvetica.json",
+            "assets/fonts/Helvetica/helvetica.png",
+        );
+
         Self {
             options,
             object_storage: Storage::default(),
-            default_font: Font::new("assets/fonts/Roboto/Roboto-Regular.ttf"),
             text_storage: Storage::default(),
-            shader_manager,
             debug_info: DebugInfo::default(),
+            shader_manager,
+            default_font, 
         }
     }
 
@@ -267,6 +272,19 @@ impl Renderer {
         }
     }
 
+
+    pub fn toggle_wireframe(&mut self) {
+        unsafe {
+            if self.debug_info.is_wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                self.debug_info.is_wireframe = false;
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                self.debug_info.is_wireframe = true;
+            }
+        }
+    }
+
     /// Toggle show/hidden mesh.
     pub fn toggle_mesh(&mut self, id: GenerationId) {
         if let Some(object) = self.object_storage.get_mut(id) {
@@ -289,31 +307,21 @@ impl Renderer {
         self.add_mesh(primitives::create_line(&name, ray));
     }
 
-    pub fn add_text<T: ToString>(
+    pub fn add_text(
         &mut self,
-        text: T,
-        position: Pos2D,
-        color: Rgb,
+        text: Text,
     ) -> GenerationId {
-        let text = Text {
-            content: text.to_string(),
-            position,
-            font_attached: "Roboto-Regular.ttf".to_owned(),
-            color,
-        };
-
         self.text_storage.push(text)
     }
 
-    pub fn update_text<T: ToString>(
+    pub fn update_text(
         &mut self,
-        text_to_replace: GenerationId,
-        text: T,
-        position: Pos2D,
-    ) {
-        if let Some(to_replace) = self.text_storage.get_mut(text_to_replace) {
-            to_replace.content = text.to_string();
-            to_replace.position = position;
+        text_id: GenerationId,
+    ) -> &mut Text {
+        if let Some(to_replace) = self.text_storage.get_mut(text_id) {
+            to_replace
+        } else {
+            panic!();
         }
     }
 
@@ -322,7 +330,7 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, state: &RenderState) {
-        self.debug_info.mesh_call_nb = 0;
+        self.debug_info.draw_call = 0;
 
         // Render all our meshes to the screen.
         for obj in self.object_storage.items.values() {
@@ -369,7 +377,7 @@ impl Renderer {
 
             unsafe {
                 gl::Disable(gl::BLEND);
-                self.debug_info.mesh_call_nb += 1;
+                self.debug_info.draw_call += 1;
 
                 match obj.mode {
                     DrawMode::Triangles => {
@@ -407,8 +415,14 @@ impl Renderer {
         let program = &self.shader_manager.list[&ShaderType::TextShader];
         opengl::use_shader_program(program.program_id);
 
+        shaders::set_matrix4(
+            program.program_id,
+            "projection",
+            utils::ortho_proj(state).as_slice(),
+        );
+
         for text in self.text_storage.items.values() {
-            self.default_font.render(text, program.program_id, &state);
+            self.default_font.render(text, program.program_id);
         }
     }
 

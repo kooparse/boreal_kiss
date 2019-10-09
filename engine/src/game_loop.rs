@@ -50,6 +50,7 @@ impl GameLoop {
     fn update_time(&mut self) {
         self.time.last_time = self.time.now;
         self.time.now = Time::now();
+        // Not good, should substract the (sync) sleep time here.
         self.time.dt = (self.time.now - self.time.last_time).as_secs_f64()
     }
 }

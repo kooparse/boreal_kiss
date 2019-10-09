@@ -2,7 +2,7 @@ use image;
 
 pub type TextureDim = (u32, u32);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Texture {
     pub raw: Vec<u8>,
     pub dim: TextureDim,
@@ -18,7 +18,7 @@ impl Texture {
 
         Self {
             // Flip texture vertically so opengl uv mapping are set corretly.
-            raw: img.flipv().raw_pixels(),
+            raw: img.raw_pixels(),
             dim: img.to_rgb().dimensions(),
         }
     }

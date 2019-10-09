@@ -87,6 +87,13 @@ pub fn set_i32(shader_id: ShaderProgramId, var_name: &str, value: i32) {
     }
 }
 
+pub fn set_f32(shader_id: ShaderProgramId, var_name: &str, value: f32) {
+    let shader_variable = get_location(shader_id, var_name);
+    unsafe {
+        gl::Uniform1f(shader_variable, value);
+    }
+}
+
 pub fn set_bool(shader_id: ShaderProgramId, var_name: &str, value: bool) {
     let shader_variable = get_location(shader_id, var_name);
     unsafe {
