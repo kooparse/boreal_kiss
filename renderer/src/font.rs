@@ -74,7 +74,6 @@ impl Font {
 
         text.content
             .split("")
-            .collect::<Vec<&str>>()
             .into_iter()
             .for_each(|letter| {
                 // If character not found in our atlas, we skip.
