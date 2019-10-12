@@ -4,23 +4,17 @@ use engine::{
     camera::Camera,
     input::{Cursor, Input, Key, MouseButton},
     platform::PlatformWrapper,
-    time::Time,
+    time::{Time, Timer},
 };
 use nalgebra_glm as glm;
-use renderer::{
-    GenerationId,
-    Text,
-    Vector, 
-    Rgb,
-    RenderState, 
-    Renderer, 
-};
+use renderer::{GenerationId, RenderState, Renderer, Rgb, Text, Vector};
 
 #[derive(Default)]
 pub struct Editor {
     pub camera: Camera,
-    framerate: GenerationId,
-    nb_mesh_calls: GenerationId,
+    text_dt_id: GenerationId,
+    text_mesh_id: GenerationId,
+    timer: Timer,
 }
 
 impl Editor {
@@ -29,16 +23,18 @@ impl Editor {
         renderer.flush_meshes();
         renderer.add_meshes(scene);
 
-        self.nb_mesh_calls = renderer.add_text(Text {
+        self.timer = Timer::new(0.5);
+
+        self.text_mesh_id = renderer.add_text(Text {
             position: Vector(10., 750., 0.),
             font_size: 31.,
-            .. Text::default()
+            ..Text::default()
         });
 
-        self.framerate = renderer.add_text(Text {
+        self.text_dt_id = renderer.add_text(Text {
             position: Vector(10., 725., 0.),
             font_size: 31.,
-            .. Text::default()
+            ..Text::default()
         });
     }
 
@@ -70,19 +66,19 @@ impl Editor {
             renderer.add_ray(origin, direction, 100f32);
         });
 
-        renderer.update_text(self.nb_mesh_calls).content = 
-            format!("Meshes rendered: {}", renderer.debug_info.draw_call);
+        if self.timer.is_passed(time.dt, 0.15) {
+            renderer.update_text(self.text_mesh_id).content =
+                format!("Meshes rendered: {}", renderer.debug_info.draw_call);
 
-        let framerate = (time.dt * 1000.).round();
-        let framerate_text = renderer.update_text(self.framerate);
+            let text_dt_id = (time.dt * 1000.).round();
+            let framerate_text = renderer.update_text(self.text_dt_id);
 
-        framerate_text.content = 
-            format!("Tick: {} ms", framerate);
+            if text_dt_id > 16. {
+                framerate_text.color = Rgb::new(1., 0., 0.);
+            }
 
-        if framerate > 16. {
-            framerate_text.color = Rgb::new(1., 0., 0.);
+            framerate_text.content = format!("Tick: {} ms", text_dt_id);
         }
-
     }
 
     pub fn move_camera(
@@ -128,7 +124,6 @@ impl Editor {
         (
             Vector::from_glm(cam_pos),
             Vector::from_glm(glm::normalize(&(-far_view_point))),
-
         )
     }
 }
