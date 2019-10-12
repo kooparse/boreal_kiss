@@ -1,10 +1,11 @@
 use crate::{
+    Mesh,
     color::Rgba, 
     texture::Texture,
-    vertex::{Vector3, UV},
-    shaders::ShaderProgramId
+    Vector,
+    vertex::UV,
+    shaders::{ShaderProgramId, ShaderType}
 };
-use super::Mesh;
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
@@ -12,6 +13,40 @@ pub type VAO = u32;
 pub type VBO = u32;
 pub type EBO = u32;
 pub type TexId = u32;
+
+/// All the data linked to our backend renderer.
+#[derive(Debug, Clone)]
+pub struct GpuBound {
+    pub vao: VAO,
+    pub vbo: VBO,
+    pub ebo: Option<EBO>,
+    pub tex_ids: Vec<TexId>,
+    pub primitives_len: usize,
+    pub shader: ShaderType,
+}
+
+impl Drop for GpuBound {
+    fn drop(&mut self) {
+        unsafe {
+            // Delete VAO.
+            gl::DeleteVertexArrays(1, [self.vao].as_ptr());
+
+            // Delete texture.
+            gl::DeleteTextures(
+                self.tex_ids.len() as i32,
+                self.tex_ids.as_ptr(),
+            );
+
+            // Delete VBO and EBO.
+            if let Some(ebo) = self.ebo {
+                gl::DeleteBuffers(2, [self.vbo, ebo].as_ptr());
+            } else {
+                gl::DeleteBuffers(1, [self.vbo].as_ptr());
+            }
+        }
+    }
+}
+
 
 /// Used to check if opengl is loaded (crash otherwise).
 /// The method "slice_from_raw_parts" from the nightly would
@@ -96,7 +131,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
     let with_ebo = !object.vertex.indices.is_empty();
 
     let mut total_size = (object.vertex.primitives.len()
-        * mem::size_of::<Vector3>())
+        * mem::size_of::<Vector>())
         + (object.vertex.colors.len() * mem::size_of::<Rgba>());
 
     object.vertex.uv_coords.iter().for_each(|set| {
@@ -119,16 +154,16 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
 
         let mut data_cursor: isize = 0;
 
-        // Position data.
+        // Vector data.
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
             data_cursor,
-            (object.vertex.primitives.len() * mem::size_of::<Vector3>())
+            (object.vertex.primitives.len() * mem::size_of::<Vector>())
                 as isize,
             object.vertex.primitives.as_ptr() as *const _,
         );
         data_cursor += (object.vertex.primitives.len()
-            * mem::size_of::<Vector3>()) as isize;
+            * mem::size_of::<Vector>()) as isize;
 
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
@@ -288,20 +323,20 @@ pub fn load_object_to_gpu(
         let mut location = 0;
         let mut data_cursor = 0;
 
-        // Positions
+        // Vectors
         gl::VertexAttribPointer(
             location,
             3,
             gl::FLOAT,
             gl::FALSE,
-            mem::size_of::<Vector3>() as i32,
+            mem::size_of::<Vector>() as i32,
             ptr::null(),
         );
         gl::EnableVertexAttribArray(0);
 
         location += 1;
         data_cursor +=
-            object.vertex.primitives.len() * mem::size_of::<Vector3>();
+            object.vertex.primitives.len() * mem::size_of::<Vector>();
 
         // Colors
         gl::VertexAttribPointer(

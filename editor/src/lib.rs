@@ -8,10 +8,10 @@ use engine::{
 };
 use nalgebra_glm as glm;
 use renderer::{
-    storage::GenerationId,
-    text::Text,
-    Pos2D, 
-    color::Rgb,
+    GenerationId,
+    Text,
+    Vector, 
+    Rgb,
     RenderState, 
     Renderer, 
 };
@@ -30,14 +30,14 @@ impl Editor {
         renderer.add_meshes(scene);
 
         self.nb_mesh_calls = renderer.add_text(Text {
-            position: Pos2D(10., 750.),
-            font_size: 21.,
+            position: Vector(10., 750., 0.),
+            font_size: 31.,
             .. Text::default()
         });
 
         self.framerate = renderer.add_text(Text {
-            position: Pos2D(10., 730.),
-            font_size: 18.,
+            position: Vector(10., 725., 0.),
+            font_size: 31.,
             .. Text::default()
         });
     }
@@ -105,7 +105,7 @@ impl Editor {
         &self,
         cursor: &Cursor,
         render_state: &RenderState,
-    ) -> (glm::TVec3<f32>, glm::TVec3<f32>) {
+    ) -> (Vector, Vector) {
         let cam_pos = self.camera.position;
 
         let screen_point = cursor.position;
@@ -125,6 +125,10 @@ impl Editor {
             viewport,
         );
 
-        (cam_pos, glm::normalize(&(-far_view_point)))
+        (
+            Vector::from_glm(cam_pos),
+            Vector::from_glm(glm::normalize(&(-far_view_point))),
+
+        )
     }
 }

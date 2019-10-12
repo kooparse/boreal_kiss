@@ -3,32 +3,32 @@ mod opengl;
 pub mod primitives;
 mod ray;
 mod shaders;
-pub mod storage;
-pub mod text;
+mod storage;
+mod text;
 mod texture;
 mod utils;
 mod vertex;
-pub mod color;
+mod mesh;
+mod color;
+mod position;
+
 
 use nalgebra_glm as glm;
-use std::cmp::min;
-use std::ptr;
 use crate::{
-    color::{Rgba, Rgb},
+    mesh::LoadedMesh,
     font::Font,
-    storage::{GenerationId, Storage},
-    text::Text,
-    texture::Texture,
-    vertex::{Vector3, Vertex},
-    opengl::{TexId, EBO, VAO, VBO},
+    storage::{Storage},
     ray::Ray,
-    shaders::{ShaderFlags, ShaderManager, ShaderType}
+    shaders::{ShaderManager, ShaderType, ShaderProgramId}
 };
-
-#[derive(Default)]
-pub struct Pos2D(pub f32, pub f32);
-#[derive(Default)]
-pub struct Pos3D(pub f32, pub f32, pub f32);
+pub use crate::{
+    position::Vector,
+    mesh::Mesh,
+    opengl::GpuBound,
+    color::{Rgba,Rgb},
+    storage::GenerationId,
+    text::Text
+};
 
 #[derive(Debug)]
 pub struct GameResolution {
@@ -42,6 +42,17 @@ pub enum DrawMode {
     Triangles,
     Lines,
     Points,
+}
+
+pub enum ObjectType {
+    Text,
+    Mesh,
+    Ray,
+}
+
+pub trait DrawableObject {
+    fn draw(&self, state: &RenderState, program_id: ShaderProgramId);
+    fn cleanup(&self);
 }
 
 #[derive(Default)]
@@ -61,108 +72,6 @@ impl RendererOptions {
             with_multisampling,
             with_depth_testing,
             default_color,
-        }
-    }
-}
-
-/// All the data linked to our backend renderer.
-#[derive(Debug)]
-pub struct GpuBound {
-    vao: VAO,
-    vbo: VBO,
-    ebo: Option<EBO>,
-    tex_ids: Vec<TexId>,
-    primitives_len: usize,
-    shader: ShaderType,
-}
-
-impl Drop for GpuBound {
-    fn drop(&mut self) {
-        unsafe {
-            // Delete VAO.
-            gl::DeleteVertexArrays(1, [self.vao].as_ptr());
-
-            // Delete texture.
-            gl::DeleteTextures(
-                self.tex_ids.len() as i32,
-                self.tex_ids.as_ptr(),
-            );
-
-            // Delete VBO and EBO.
-            if let Some(ebo) = self.ebo {
-                gl::DeleteBuffers(2, [self.vbo, ebo].as_ptr());
-            } else {
-                gl::DeleteBuffers(1, [self.vbo].as_ptr());
-            }
-        }
-    }
-}
-
-pub struct LoadedObject {
-    #[allow(unused)]
-    name: String,
-    is_hidden: bool,
-    world_pos: Vector3,
-    mode: DrawMode,
-    gpu_bound: GpuBound,
-    flags: ShaderFlags,
-}
-
-pub struct Mesh<'n> {
-    pub name: &'n str,
-    pub vertex: Vertex,
-    pub textures: Vec<Texture>,
-    pub shader_type: ShaderType,
-    pub world_pos: glm::TVec3<f32>,
-    pub mode: DrawMode,
-}
-
-impl<'n> From<&Mesh<'n>> for LoadedObject {
-    fn from(object: &Mesh<'n>) -> LoadedObject {
-        // From system memmory to gpu memory.
-        let (vao, vbo, ebo, tex_ids) = opengl::load_object_to_gpu(&object);
-
-        let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
-            object.vertex.indices.len()
-        });
-
-        let gpu_bound = GpuBound {
-            vao,
-            vbo,
-            ebo,
-            primitives_len,
-            shader: object.shader_type,
-            tex_ids,
-        };
-
-        let (has_uv, has_multi_uv, has_vert_colors, _tex_number) = {
-            let colors = &object.vertex.colors;
-            // We want a correlation between the number of set of coords
-            // and the number of texture loaded.
-            let tex_number =
-                min(object.vertex.uv_coords.len(), object.textures.len());
-
-            (
-                tex_number > 0,
-                tex_number > 1,
-                !colors.is_empty(),
-                tex_number,
-            )
-        };
-
-        let flags = ShaderFlags {
-            has_uv,
-            has_multi_uv,
-            has_vert_colors,
-        };
-
-        LoadedObject {
-            name: object.name.to_string(),
-            is_hidden: false,
-            mode: object.mode,
-            world_pos: object.world_pos,
-            gpu_bound,
-            flags,
         }
     }
 }
@@ -194,11 +103,12 @@ pub struct DebugInfo {
     pub is_wireframe: bool,
 }
 
+
 pub struct Renderer {
     // Some options like resolution, etc...
     options: RendererOptions,
     // Store all our mesh there (only the gpu information).
-    object_storage: Storage<LoadedObject>,
+    mesh_storage: Storage<LoadedMesh>,
     // For now, only one font...
     default_font: Font,
     // Store all the text that should be rendered on the screen.
@@ -230,11 +140,43 @@ impl Renderer {
 
         Self {
             options,
-            object_storage: Storage::default(),
+            mesh_storage: Storage::default(),
             text_storage: Storage::default(),
             debug_info: DebugInfo::default(),
             shader_manager,
             default_font, 
+        }
+    }
+
+    pub fn draw(&mut self, state: &RenderState) {
+        // Reset the debug counter.
+        self.debug_info.draw_call = 0;
+        //
+        // Render all our meshes to the screen.
+        for mesh in self.mesh_storage.items.values() {
+            self.debug_info.draw_call +=  1;
+
+            let program = &self.shader_manager.list[&mesh.gpu_bound.shader];
+            mesh.draw(state, program.program_id);
+            mesh.cleanup();
+        }
+
+        //
+        // Render all our texts to the screen.
+        for text in self.text_storage.items.values_mut() {
+            self.debug_info.draw_call +=  1;
+
+            // Activate the text shader.
+            let program = &self.shader_manager.list[&ShaderType::TextShader];
+            opengl::use_shader_program(program.program_id);
+
+            shaders::set_matrix4(
+                program.program_id,
+                "projection",
+                utils::ortho_proj(state).as_slice(),
+            );
+
+            self.default_font.render(text, program.program_id);
         }
     }
 
@@ -249,45 +191,32 @@ impl Renderer {
 
     /// We push objects into the storage and load data into gl.
     pub fn add_mesh(&mut self, object: Mesh) -> GenerationId {
-        self.object_storage.push(LoadedObject::from(&object))
+        self.mesh_storage.push(LoadedMesh::from(&object))
     }
     pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GenerationId> {
         objects
             .iter()
-            .map(|object| self.object_storage.push(LoadedObject::from(object)))
+            .map(|object| self.mesh_storage.push(LoadedMesh::from(object)))
             .collect()
     }
 
     /// Hide a mesh (it will still be loaded in the gpu mem).
     pub fn hide_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(id) {
+        if let Some(object) = self.mesh_storage.get_mut(id) {
             object.is_hidden = true;
         }
     }
 
     /// Show a hidden mesh.
     pub fn show_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(id) {
+        if let Some(object) = self.mesh_storage.get_mut(id) {
             object.is_hidden = false;
-        }
-    }
-
-
-    pub fn toggle_wireframe(&mut self) {
-        unsafe {
-            if self.debug_info.is_wireframe {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-                self.debug_info.is_wireframe = false;
-            } else {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-                self.debug_info.is_wireframe = true;
-            }
         }
     }
 
     /// Toggle show/hidden mesh.
     pub fn toggle_mesh(&mut self, id: GenerationId) {
-        if let Some(object) = self.object_storage.get_mut(id) {
+        if let Some(object) = self.mesh_storage.get_mut(id) {
             if object.is_hidden {
                 self.show_mesh(id);
             } else {
@@ -296,21 +225,11 @@ impl Renderer {
         }
     }
 
-    pub fn add_ray(
-        &mut self,
-        origin: glm::TVec3<f32>,
-        direction: glm::TVec3<f32>,
-        length: f32,
-    ) {
-        let ray = Ray::new(origin, direction, length);
-        let name = format!("ray: {}", direction);
-        self.add_mesh(primitives::create_line(&name, ray));
-    }
-
     pub fn add_text(
         &mut self,
         text: Text,
     ) -> GenerationId {
+        // let loaded = LoadedText::from(text);
         self.text_storage.push(text)
     }
 
@@ -329,114 +248,42 @@ impl Renderer {
         self.text_storage.remove(id);
     }
 
-    pub fn draw(&mut self, state: &RenderState) {
-        self.debug_info.draw_call = 0;
-
-        // Render all our meshes to the screen.
-        for obj in self.object_storage.items.values() {
-            if obj.is_hidden {
-                continue;
-            }
-
-            let gpu_bound = &obj.gpu_bound;
-            let program = &self.shader_manager.list[&gpu_bound.shader];
-
-            opengl::use_shader_program(program.program_id);
-            opengl::use_vao(gpu_bound.vao);
-
-            shaders::set_matrix4(
-                program.program_id,
-                "view",
-                state.view.as_slice(),
-            );
-
-            // TODO: Don't set projection matrix in the render loop.
-            shaders::set_matrix4(
-                program.program_id,
-                "projection",
-                state.projection.as_slice(),
-            );
-
-            // TODO: This should be (maybe) stored in the object.
-            let mut model = glm::Mat4::identity();
-            model = glm::translate(&model, &obj.world_pos);
-
-            shaders::set_matrix4(program.program_id, "model", model.as_slice());
-
-            // Set shader flags.
-            obj.flags.set_flags_to_shader(program.program_id);
-
-            gpu_bound
-                .tex_ids
-                .iter()
-                .enumerate()
-                .for_each(|(index, tex_id)| {
-                    shaders::set_sampler(program.program_id, index);
-                    opengl::bind_texture(*tex_id, index);
-                });
-
-            unsafe {
-                gl::Disable(gl::BLEND);
-                self.debug_info.draw_call += 1;
-
-                match obj.mode {
-                    DrawMode::Triangles => {
-                        if let Some(ebo) = gpu_bound.ebo {
-                            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-                            gl::DrawElements(
-                                gl::TRIANGLES,
-                                gpu_bound.primitives_len as i32,
-                                gl::UNSIGNED_INT,
-                                ptr::null(),
-                            );
-                        } else {
-                            gl::DrawArrays(
-                                gl::TRIANGLES,
-                                0,
-                                gpu_bound.primitives_len as i32,
-                            );
-                        }
-                    }
-
-                    DrawMode::Lines => {
-                        gl::DrawArrays(
-                            gl::LINES,
-                            0,
-                            gpu_bound.primitives_len as i32,
-                        );
-                    }
-
-                    _ => unimplemented!(),
-                }
-            }
-        }
-
-        // Activate the text shader.
-        let program = &self.shader_manager.list[&ShaderType::TextShader];
-        opengl::use_shader_program(program.program_id);
-
-        shaders::set_matrix4(
-            program.program_id,
-            "projection",
-            utils::ortho_proj(state).as_slice(),
-        );
-
-        for text in self.text_storage.items.values() {
-            self.default_font.render(text, program.program_id);
-        }
-    }
-
     pub fn remove_mesh(&mut self, id: GenerationId) {
-        self.object_storage.remove(id);
+        self.mesh_storage.remove(id);
     }
 
     /// The method shrink_to_fit will frees any allocated
     /// memory that is not used.
     pub fn flush_meshes(&mut self) {
-        self.object_storage.clear();
+        self.mesh_storage.clear();
     }
 
     pub fn clear_screen(&self) {
         opengl::clear(&self.options.default_color);
     }
+
+    pub fn add_ray(
+        &mut self,
+        origin: Vector,
+        direction: Vector,
+        length: f32,
+    ) {
+        let ray = Ray::new(origin, direction, length);
+        let name = format!("ray: {:?}", direction);
+        self.add_mesh(primitives::create_line(&name, ray));
+    }
+
+    pub fn toggle_wireframe(&mut self) {
+        unsafe {
+            if self.debug_info.is_wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+                self.debug_info.is_wireframe = false;
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                self.debug_info.is_wireframe = true;
+            }
+        }
+    }
+
+
 }

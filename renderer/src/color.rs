@@ -31,14 +31,15 @@ impl Default for Rgba {
     }
 }
 
-impl From<[f32; 4]> for Rgba {
-    fn from(color_array: [f32; 4]) -> Self {
-        Self::new(
-            color_array[0], 
-            color_array[1], 
-            color_array[2],
-            color_array[3],
-        )
+impl From<&Rgba> for [f32; 3] {
+    fn from(rgba: &Rgba) -> Self {
+        [rgba.r, rgba.g, rgba.b]
+    }
+}
+
+impl From<&Rgba> for [f32; 4] {
+    fn from(rgba: &Rgba) -> Self {
+        [rgba.r, rgba.g, rgba.b, rgba.a]
     }
 }
 
@@ -55,7 +56,7 @@ impl From<&Rgb> for Rgba {
 
 /// Define RGBA color.
 /// From 0 (black) to 1 (white).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -82,25 +83,18 @@ impl Default for Rgb {
     }
 }
 
-impl From<&[f32; 3]> for Rgb {
-    fn from(color_array: &[f32; 3]) -> Self {
-        Self::new(
-            color_array[0], 
-            color_array[1], 
-            color_array[2],
-        )
+impl From<&Rgb> for [f32; 3] {
+    fn from(rgb: &Rgb) -> Self {
+        [rgb.r, rgb.g, rgb.b]
     }
 }
 
-impl From<&[f32; 4]> for Rgb {
-    fn from(color_array: &[f32; 4]) -> Self {
-        Self::new(
-            color_array[0], 
-            color_array[1], 
-            color_array[2],
-        )
+impl From<&Rgb> for [f32; 4] {
+    fn from(rgb: &Rgb) -> Self {
+        [rgb.r, rgb.g, rgb.b, 1.]
     }
 }
+
 
 impl From<&Rgba> for Rgb {
     fn from(rgba: &Rgba) -> Self {

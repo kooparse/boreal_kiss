@@ -59,7 +59,7 @@ impl Font {
     }
 
     pub fn render(&mut self, text: &Text, text_shader: ShaderProgramId) {
-        let scale = 1.0;
+        let scale = text.font_size / self.size;
 
         // Caching system.
         // If this text was previously rendered, we just use our existing
@@ -74,7 +74,6 @@ impl Font {
 
         text.content
             .split("")
-            .into_iter()
             .for_each(|letter| {
                 // If character not found in our atlas, we skip.
                 if self.characters.get(letter).is_none() {
@@ -158,7 +157,7 @@ impl Font {
         opengl::bind_texture(gpu_bound.tex_ids[0], 0);
 
         let mut model = glm::Mat4::identity();
-        model = glm::translate(&model, &glm::vec3(position.0, position.1, 0.));
+        model = glm::translate(&model, &position.to_glm());
 
         shaders::set_sampler(text_shader, 0);
         shaders::set_matrix4(text_shader, "model", model.as_slice());
@@ -166,7 +165,7 @@ impl Font {
         shaders::set_vec3(
             text_shader,
             "text_color",
-            &[color.r, color.g, color.b],
+            &color.into()
         );
 
         unsafe {

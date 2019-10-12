@@ -18,6 +18,7 @@ pub struct ShaderFlags {
     pub has_multi_uv: bool,
     pub has_vert_colors: bool,
 }
+
 impl ShaderFlags {
     pub fn set_flags_to_shader(&self, program_id: ShaderProgramId) {
         set_bool(program_id, "HAS_UV", self.has_uv);

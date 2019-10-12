@@ -1,15 +1,15 @@
-use nalgebra_glm as glm;
+use crate::Vector;
 
 pub struct Ray {
-    pub origin: glm::TVec3<f32>,
-    pub direction: glm::TVec3<f32>,
+    pub origin: Vector,
+    pub direction: Vector,
     pub length: f32,
 }
 
 impl Ray {
     pub fn new(
-        origin: glm::TVec3<f32>,
-        direction: glm::TVec3<f32>,
+        origin: Vector,
+        direction: Vector,
         length: f32,
     ) -> Self {
         Self {

@@ -1,4 +1,4 @@
-use super::{create_shader_program, ShaderProgram, ShaderType};
+use crate::shaders::{create_shader_program, ShaderProgram, ShaderType};
 
 pub const VERTEX_SOURCE: &str = r#"
     #version 330 core

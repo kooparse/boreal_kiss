@@ -1,7 +1,8 @@
 use nalgebra_glm as glm;
 use crate::color::Rgba;
+use crate::Vector;
 
-pub type Vector3 = glm::TVec3<f32>;
+pub type Vector3 = Vector;
 pub type UV = glm::TVec2<f32>;
 
 #[derive(Debug, Default)]

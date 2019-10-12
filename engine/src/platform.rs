@@ -1,4 +1,4 @@
-use super::input::Input;
+use crate::input::Input;
 use renderer::{GameResolution, RendererOptions};
 
 pub type DpiFactor = f64;

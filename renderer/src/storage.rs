@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -5,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 pub type IdType = u32;
 pub type GenerationId = GeneratedId<IdType>;
 
-#[derive(Default, Debug, Eq, Hash, Copy, Clone)]
+#[derive(Default, Debug, Eq, Copy, Clone)]
 pub struct GeneratedId<T> {
     data: T,
     generation: T,
@@ -38,6 +39,13 @@ impl<T> DerefMut for GeneratedId<T> {
 impl<T: PartialEq> PartialEq for GeneratedId<T> {
     fn eq(&self, other: &Self) -> bool {
         self.data == other.data && self.generation == other.generation
+    }
+}
+
+impl<T: Hash> Hash for GeneratedId<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.data.hash(state);
+        self.generation.hash(state);
     }
 }
 

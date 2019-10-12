@@ -1,5 +1,6 @@
-use super::{DrawMode, Mesh};
 use crate::{
+    Vector,
+    DrawMode, Mesh,
     ray::Ray,
     color::Rgba,
     shaders::ShaderType,
@@ -14,7 +15,7 @@ use nalgebra_glm as glm;
 pub fn create_plane<'t, 'n>(
     name: &'n str,
     texture_path: &'t str,
-    world_pos: glm::TVec3<f32>,
+    world_pos: Vector,
     scale: f32,
 ) -> Mesh<'n> {
     let shader_type = ShaderType::SimpleShader;
@@ -36,10 +37,10 @@ pub fn create_plane<'t, 'n>(
 
     let vertex = Vertex {
         primitives: vec![
-            glm::vec3(-scale, 0., -scale),
-            glm::vec3(-scale, 0., scale),
-            glm::vec3(scale, 0., scale),
-            glm::vec3(scale, 0., -scale),
+            Vector(-scale, 0., -scale),
+            Vector(-scale, 0., scale),
+            Vector(scale, 0., scale),
+            Vector(scale, 0., -scale),
         ],
         uv_coords,
         indices: vec![0, 1, 2, 0, 2, 3],
@@ -58,7 +59,7 @@ pub fn create_plane<'t, 'n>(
 
 pub fn load_mesh<'n>(
     path: &'n str,
-    world_pos: glm::TVec3<f32>,
+    world_pos: Vector,
     scale: f32,
 ) -> Mesh<'n> {
     let (model, buffers, images) = gltf::import(path).unwrap();
@@ -74,13 +75,13 @@ pub fn load_mesh<'n>(
                     .read_positions()
                     .unwrap()
                     .map(|pos| {
-                        glm::vec3(
+                        Vector(
                             pos[0] * scale,
                             pos[1] * scale,
                             pos[2] * scale,
                         )
                     })
-                    .collect::<_>()
+                    .collect()
             };
 
             vertex.colors = {
@@ -90,7 +91,7 @@ pub fn load_mesh<'n>(
                         .map(|color| {
                             Rgba::new(color[0], color[1], color[2], color[3])
                         })
-                        .collect::<_>()
+                        .collect()
                 })
             };
 
@@ -105,7 +106,7 @@ pub fn load_mesh<'n>(
                 let coords: Vec<UV> = coords
                     .into_f32()
                     .map(|uv| glm::vec2(uv[0], uv[1]))
-                    .collect::<_>();
+                    .collect();
 
                 vertex.uv_coords.push(UVSet::new(tex_set, coords));
                 tex_set += 1;
@@ -139,33 +140,33 @@ pub fn create_line<'n>(name: &'n str, ray: Ray) -> Mesh<'n> {
     Mesh {
         name,
         vertex,
-        world_pos: glm::vec3(0.0, 0.0, 0.0),
+        world_pos: Vector(0.0, 0.0, 0.0),
         textures: vec![],
         shader_type: ShaderType::SimpleShader,
         mode: DrawMode::Lines,
     }
 }
 
-pub fn create_grid<'t, 'n>(
+pub fn create_grid<'n>(
     name: &'n str,
-    world_pos: glm::TVec3<f32>,
+    world_pos: Vector,
     dim: i32,
 ) -> Mesh<'n> {
     let scale = 5f32;
-    let mut list: Vec<glm::TVec3<f32>> = vec![];
+    let mut list: Vec<Vector> = vec![];
     let ratio = (dim / 2) as f32;
 
     for i in 0..=dim {
         // Rows
         let r = (i as f32 / ratio) * scale;
-        list.push(glm::vec3(-scale, 0., -scale + r));
-        list.push(glm::vec3(scale, 0., -scale + r));
+        list.push(Vector(-scale, 0., -scale + r));
+        list.push(Vector(scale, 0., -scale + r));
 
         for j in 0..=dim {
             // Columns
             let c = (j as f32 / ratio) * scale;
-            list.push(glm::vec3(-scale + c, 0., scale));
-            list.push(glm::vec3(-scale + c, 0., -scale));
+            list.push(Vector(-scale + c, 0., scale));
+            list.push(Vector(-scale + c, 0., -scale));
         }
     }
 

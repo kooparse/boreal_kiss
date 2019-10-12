@@ -11,7 +11,7 @@ use glutin::{
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{GameResolution, RendererOptions, color::Rgba};
+use renderer::{GameResolution, RendererOptions, Rgba};
 use std::convert::From;
 
 /// Construct a window for all desktop with the
@@ -120,8 +120,8 @@ impl PlatformWrapper for WinitPlatform {
 
         self.event_loop
             .poll_events(|glutin_event| match &glutin_event {
-                Event::DeviceEvent { event, .. } => match &event {
-                    DeviceEvent::MouseMotion { delta, .. } => {
+                Event::DeviceEvent { event, .. } => {
+                    if let DeviceEvent::MouseMotion { delta, .. } = &event {
                         let moved = Cursor {
                             delta: *delta,
                             has_moved: true,
@@ -130,8 +130,7 @@ impl PlatformWrapper for WinitPlatform {
 
                         game_input.update_cursor_position(moved);
                     }
-                    _ => (),
-                },
+                }
                 Event::WindowEvent { event, .. } => {
                     match event {
                         WindowEvent::Resized(_) => {

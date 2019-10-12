@@ -1,4 +1,4 @@
-use super::RenderState;
+use crate::RenderState;
 use nalgebra_glm as glm;
 
 pub fn ortho_proj(state: &RenderState) -> glm::Mat4 {

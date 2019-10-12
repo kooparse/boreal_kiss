@@ -61,7 +61,7 @@ pub struct Mat4 {
 
 impl Mat4 {
     pub fn indentity() -> Mat4 {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let inner: [f32; 16] = [
             1., 0., 0., 0.,
             0., 1., 0., 0.,
