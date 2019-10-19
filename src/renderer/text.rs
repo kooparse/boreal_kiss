@@ -1,5 +1,5 @@
 use std::hash::{Hash, Hasher};
-use crate::{
+use super::{
     Vector, Rgb,
 };
 

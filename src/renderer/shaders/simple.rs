@@ -1,15 +1,18 @@
-use crate::shaders::{create_shader_program, ShaderProgram, ShaderType};
-
 pub const VERTEX_SOURCE: &str = r#"
     #version 330 core
+    layout (std140) uniform;
 
     layout (location = 0) in vec3 a_pos;
     layout (location = 1) in vec4 a_color;
     layout (location = 2) in vec2 a_uv_coords[2];
 
+    // uniform Projections {
+    //     mat4 projection;
+    // };
+
+    uniform mat4 projection;
     uniform mat4 model;
     uniform mat4 view;
-    uniform mat4 projection;
 
     out VERTEX_OUT {
         vec4 color;
@@ -42,7 +45,7 @@ pub const FRAGMENT_SOURCE: &str = r#"
     out vec4 FragColor;
 
     void main() {
-        vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+        vec4 color = vec4(0.0, 1.0, 1.0, 1.0);
 
         if (HAS_VERT_COLORS) {
             color = vertex_in.color;
@@ -60,11 +63,3 @@ pub const FRAGMENT_SOURCE: &str = r#"
         FragColor = color;
     }
 "#;
-
-pub const TYPE: ShaderType = ShaderType::SimpleShader;
-
-pub fn get_program() -> ShaderProgram {
-    ShaderProgram {
-        program_id: create_shader_program(VERTEX_SOURCE, FRAGMENT_SOURCE, ""),
-    }
-}

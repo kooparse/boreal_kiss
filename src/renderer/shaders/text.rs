@@ -1,5 +1,3 @@
-use crate::shaders::{create_shader_program, ShaderProgram, ShaderType};
-
 pub const VERTEX_SOURCE: &str = r#"
     #version 330 core
     layout (location = 0) in vec4 vertex;
@@ -36,11 +34,3 @@ pub const FRAGMENT_SOURCE: &str = r#"
         FragColor = vec4(text_color, alpha);
     }  
 "#;
-
-pub const TYPE: ShaderType = ShaderType::TextShader;
-
-pub fn get_program() -> ShaderProgram {
-    ShaderProgram {
-        program_id: create_shader_program(VERTEX_SOURCE, FRAGMENT_SOURCE, ""),
-    }
-}

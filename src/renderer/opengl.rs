@@ -1,11 +1,9 @@
-use crate::{
-    Mesh,
-    color::Rgba, 
-    texture::Texture,
-    Vector,
-    vertex::UV,
-    shaders::{ShaderProgramId, ShaderType}
-};
+use super::types::Rgba;
+use super::mesh::UV;
+use super::shaders::{ShaderProgramId, ShaderType};
+use super::texture::Texture;
+use super::Mesh;
+use super::Vector;
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
 
@@ -47,7 +45,6 @@ impl Drop for GpuBound {
     }
 }
 
-
 /// Used to check if opengl is loaded (crash otherwise).
 /// The method "slice_from_raw_parts" from the nightly would
 /// be useful (https://doc.rust-lang.org/std/ptr/fn.slice_from_raw_parts.html).
@@ -79,7 +76,7 @@ pub fn set_viewport(width: i32, height: i32) {
 /// Set multisampling.
 pub fn set_multisampling(enabled: bool) {
     unsafe {
-        if enabled { 
+        if enabled {
             gl::Enable(gl::MULTISAMPLE);
         } else {
             gl::Disable(gl::MULTISAMPLE);
@@ -89,8 +86,8 @@ pub fn set_multisampling(enabled: bool) {
 /// Set depth testing.
 pub fn set_depth_testing(enabled: bool) {
     unsafe {
-        if enabled { 
-           gl::Enable(gl::DEPTH_TEST);
+        if enabled {
+            gl::Enable(gl::DEPTH_TEST);
         } else {
             gl::Disable(gl::DEPTH_TEST);
         }
@@ -117,6 +114,42 @@ pub fn gen_buffer() -> u32 {
         let mut id = 0;
         gl::GenBuffers(1, &mut id);
         id
+    }
+}
+
+pub fn generate_ubo(size: usize, block_index: u32) -> u32 {
+    unsafe {
+        let mut id = 0;
+        gl::GenBuffers(1, &mut id);
+        gl::BindBuffer(gl::UNIFORM_BUFFER, id);
+        gl::BufferData(
+            gl::UNIFORM_BUFFER,
+            size as isize,
+            ptr::null(),
+            gl::STATIC_DRAW,
+        );
+
+        gl::BindBufferBase(gl::UNIFORM_BUFFER, block_index, id);
+        // Unbind.
+        gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
+
+        id
+    }
+}
+
+pub fn set_ubo<T>(ubo: u32, offset: isize, value: T) {
+    unsafe {
+        gl::BindBuffer(gl::UNIFORM_BUFFER, ubo);
+
+        gl::BufferSubData(
+            gl::UNIFORM_BUFFER,
+            offset,
+            mem::size_of::<T>() as isize,
+            &value as *const T as *const _,
+        );
+
+        // Unbind.
+        gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
     }
 }
 

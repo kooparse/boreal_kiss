@@ -1,6 +1,7 @@
-use crate::{
+use crate::global::*;
+use super::{
     opengl,
-    shaders::{self, ShaderProgramId, ShaderType},
+    shaders::{self, ShaderType},
     text::Text,
     texture::Texture,
     GpuBound,
@@ -58,14 +59,14 @@ impl Font {
         font
     }
 
-    pub fn render(&mut self, text: &Text, text_shader: ShaderProgramId) {
+    pub fn render(&mut self, text: &Text) {
         let scale = text.font_size / self.size;
 
         // Caching system.
         // If this text was previously rendered, we just use our existing
         // gpu data.
         if let Some(gpu_bound) = self.text_caching.get(&text.content) {
-            self.to_opengl(&text, &gpu_bound, text_shader);
+            self.to_opengl(&text, &gpu_bound);
             return;
         }
 
@@ -139,7 +140,7 @@ impl Font {
             shader: ShaderType::TextShader,
         };
 
-        self.to_opengl(&text, &gpu_bound, text_shader);
+        self.to_opengl(&text, &gpu_bound);
         self.text_caching.insert(text.content.clone(), gpu_bound);
     }
 
@@ -147,7 +148,6 @@ impl Font {
         &self,
         text: &Text,
         gpu_bound: &GpuBound,
-        text_shader: ShaderProgramId,
     ) {
         let Text {
             position, color, font_size, ..
@@ -159,11 +159,12 @@ impl Font {
         let mut model = glm::Mat4::identity();
         model = glm::translate(&model, &position.to_glm());
 
-        shaders::set_sampler(text_shader, 0);
-        shaders::set_matrix4(text_shader, "model", model.as_slice());
-        shaders::set_f32(text_shader, "font_size", font_size / self.size);
+        let prog_id = SHADERS.get_program(ShaderType::TextShader);
+        shaders::set_sampler(prog_id, 0);
+        shaders::set_matrix4(prog_id, "model", model.as_slice());
+        shaders::set_f32(prog_id, "font_size", font_size / self.size);
         shaders::set_vec3(
-            text_shader,
+            prog_id,
             "text_color",
             &color.into()
         );

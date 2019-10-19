@@ -89,10 +89,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "bits"
 version = "0.1.0"
 dependencies = [
- "editor 0.1.0",
- "engine 0.1.0",
+ "gl 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gltf 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glutin 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "image 0.22.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra-glm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "renderer 0.1.0",
+ "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -210,27 +214,6 @@ dependencies = [
 name = "downcast-rs"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "editor"
-version = "0.1.0"
-dependencies = [
- "engine 0.1.0",
- "nalgebra-glm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "renderer 0.1.0",
-]
-
-[[package]]
-name = "engine"
-version = "0.1.0"
-dependencies = [
- "gl 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glutin 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "image 0.22.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "nalgebra-glm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "renderer 0.1.0",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "foreign-types"
@@ -844,18 +827,6 @@ dependencies = [
 name = "redox_syscall"
 version = "0.1.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "renderer"
-version = "0.1.0"
-dependencies = [
- "gl 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gltf 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "image 0.22.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "nalgebra-glm 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.40 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "rustc-demangle"

@@ -3,16 +3,39 @@
 ///
 /// We are using this crate for now, even if we don't have a total control
 /// over the creation of window on those targets.
-use crate::input::{Cursor, Input, Key, Modifier, MouseButton};
-use crate::platform::{Platform, PlatformWrapper};
+use super::input::{Cursor, Input, Key, Modifier, MouseButton};
+// use super::platform::{Platform, PlatformWrapper};
+use crate::global::*;
 use gl;
 use glutin::{
     dpi, Api, ContextBuilder, ContextWrapper, DeviceEvent, ElementState, Event,
     EventsLoop, GlRequest, MouseButton as GlMouseButton, PossiblyCurrent,
     VirtualKeyCode, Window as GlutinWindow, WindowBuilder, WindowEvent,
 };
-use renderer::{GameResolution, RendererOptions, Rgba};
+use nalgebra_glm as glm;
 use std::convert::From;
+
+pub fn check_platform_supported() {
+    let _target_os: &str = if cfg!(target_os = "macos") {
+        "macOS"
+    } else if cfg!(target_os = "windows") {
+        "Windows"
+    } else {
+        panic!("Target system not currently supported");
+    };
+
+    let _target_arch: &str = if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else {
+        panic!("Architecture not currently supported")
+    };
+
+    dbg!(_target_os, _target_arch);
+}
+
+pub fn is_desktop() -> bool {
+    cfg!(target_os = "macos") || cfg!(target_os = "windows")
+}
 
 /// Construct a window for all desktop with the
 /// opengl v4.1 loaded in the context. The 4.1 version is
@@ -21,14 +44,13 @@ use std::convert::From;
 pub struct WinitPlatform {
     should_close: bool,
     event_loop: EventsLoop,
-    window_size_changed: bool,
     context: ContextWrapper<PossiblyCurrent, GlutinWindow>,
 }
 
 impl WinitPlatform {
     pub fn new(
         title: &str,
-        (width, height): (u32, u32),
+        (width, height): (f32, f32),
         with_vsync: bool,
         multisampling: u16,
     ) -> Self {
@@ -51,46 +73,54 @@ impl WinitPlatform {
 
         let context = unsafe { context.make_current().unwrap() };
 
+        // Load gl function pointers.
+        gl::load_with(|symbol| context.get_proc_address(symbol) as *const _);
+
         Self {
             should_close: false,
-            window_size_changed: false,
             context,
             event_loop,
         }
     }
-}
 
-impl PlatformWrapper for WinitPlatform {
-    fn get_dimension(&self) -> GameResolution {
-        let window = self.context.window();
-        let dpi = window.get_hidpi_factor();
-        let inner_size = window.get_inner_size().unwrap();
-
-        GameResolution {
-            width: inner_size.width,
-            height: inner_size.height,
-            dpi,
-        }
-    }
-
-    fn swap_buffers(&self) {
+    pub fn swap_buffers(&self) {
         self.context
             .swap_buffers()
             .expect("Problem with gl buffer swap");
     }
 
-    fn on_resize(&self, callback: &mut dyn FnMut(GameResolution)) {
-        if self.window_size_changed {
-            callback(self.get_dimension())
+    pub fn on_resize(&self) {
+        let window = self.context.window();
+        let dpi = window.get_hidpi_factor();
+        let inner_size = window.get_inner_size().unwrap();
+
+        unsafe {
+            SCREEN_WIDTH = inner_size.width as f32;
+            SCREEN_HEIGHT = inner_size.height as f32;
+            SCREEN_DPI = dpi as u32;
+
+            *PERSPECTIVE_MATRIX.lock().unwrap() = glm::perspective(
+                SCREEN_WIDTH / SCREEN_HEIGHT,
+                45.0,
+                0.1,
+                100.0,
+            );
+            *ORTHO_MATRIX.lock().unwrap() =
+                glm::ortho(0., SCREEN_WIDTH, 0., SCREEN_HEIGHT, -1., 1.);
+
+            // opengl::set_viewport(
+            //     (width * dpi) as i32,
+            //     (height * dpi) as i32,
+            // );
         }
     }
 
-    fn should_close(&self) -> bool {
+    pub fn should_close(&self) -> bool {
         self.should_close
     }
 
     /// Hide and Grab the cursor.
-    fn hide_cursor(&self, is_hide: bool) {
+    pub fn hide_cursor(&self, is_hide: bool) {
         self.context
             .window()
             .grab_cursor(is_hide)
@@ -99,21 +129,8 @@ impl PlatformWrapper for WinitPlatform {
         self.context.window().hide_cursor(is_hide);
     }
 
-    fn load_opengl(&self) -> RendererOptions {
-        let pixel_format = self.context.get_pixel_format();
-
-        gl::load_with(|symbol| {
-            self.context.get_proc_address(symbol) as *const _
-        });
-
-        RendererOptions::new(
-            pixel_format.multisampling.is_some(),
-            true,
-            Rgba::new(0.1, 0.1, 0.2, 1.0),
-        )
-    }
-
-    fn update_inputs(&mut self, game_input: &mut Input) {
+    // Map winit input to our own input layer.
+    pub fn map_winit_inputs(&mut self, game_input: &mut Input) {
         let mut window_size_changed = false;
         let mut should_close = false;
         game_input.cursor.has_moved = false;
@@ -299,13 +316,10 @@ impl PlatformWrapper for WinitPlatform {
                 _ => (),
             });
 
-        self.window_size_changed = window_size_changed;
-        self.should_close = should_close;
-    }
-}
+        if window_size_changed {
+            self.on_resize();
+        }
 
-impl From<WinitPlatform> for Platform {
-    fn from(window: WinitPlatform) -> Self {
-        Self::new(Box::new(window))
+        self.should_close = should_close;
     }
 }

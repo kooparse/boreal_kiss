@@ -1,9 +1,6 @@
-use crate::{
-    input::{Input, Key},
-    time::Time,
-};
+use crate::input::{Input, Key};
+use crate::time::Time;
 use nalgebra_glm as glm;
-use std::default::Default;
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -11,6 +8,8 @@ pub struct Camera {
 
     pub pos: (f64, f64),
     pub speed: f64,
+    pub max_speed: f64,
+    pub acceleration: f64,
     pub target: glm::TVec3<f32>,
     pub front: glm::TVec3<f32>,
     pub up: glm::TVec3<f32>,
@@ -24,7 +23,10 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            speed: 2.5,
+            speed: 0.,
+            max_speed: 2.5,
+            acceleration: 0.3,
+
             position: glm::vec3(0.0, 1.0, 3.),
             pos: (0., 0.),
             front: glm::vec3(0., 0., -1.),
@@ -50,33 +52,44 @@ impl Camera {
     }
 
     pub fn update_pos(&mut self, input: &mut Input, time: &Time) {
-        let (speed, front, up) = (self.speed, self.front, self.up);
+        let (front, up) = (self.front, self.up);
 
-        let speed = (speed * time.dt) as f32;
+        // Smooth start/end (even if end is not working currently).
+        if input.is_nothing_pressed() {
+            self.speed = 0.;
+        } else {
+            if self.speed < self.max_speed {
+                self.speed += 0.3;
+            } else {
+                self.speed = self.max_speed;
+            }
+        }
 
-        input.pressed(Key::W, || {
+        let speed = (self.speed * time.dt) as f32;
+
+        if input.is_pressed(Key::W) {
             self.position += speed * front;
-        });
+        };
 
-        input.pressed(Key::S, || {
+        if input.is_pressed(Key::S) {
             self.position -= speed * front;
-        });
+        };
 
-        input.pressed(Key::D, || {
+        if input.is_pressed(Key::D) {
             self.position += glm::normalize(&front.cross(&up)) * speed;
-        });
+        };
 
-        input.pressed(Key::A, || {
+        if input.is_pressed(Key::A) {
             self.position -= glm::normalize(&front.cross(&up)) * speed;
-        });
+        };
 
-        input.pressed(Key::Q, || {
+        if input.is_pressed(Key::Q) {
             self.position -= speed * up;
-        });
+        };
 
-        input.pressed(Key::E, || {
+        if input.is_pressed(Key::E) {
             self.position += speed * up;
-        });
+        };
     }
 
     pub fn update_spin(&mut self, input: &mut Input, time: &Time) {
@@ -99,8 +112,8 @@ impl Camera {
         let mut y_offset = self.last_pos.1 - pos_y;
         self.last_pos = (pos_x, pos_y);
 
-        x_offset *= self.speed * time.dt;
-        y_offset *= self.speed * time.dt;
+        x_offset *= self.max_speed * time.dt;
+        y_offset *= self.max_speed * time.dt;
 
         self.yaw += x_offset;
         self.pitch += y_offset;

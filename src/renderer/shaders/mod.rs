@@ -1,8 +1,11 @@
+pub mod light;
 pub mod simple;
 pub mod text;
 
+use crate::global::*;
+use super::{opengl, SpaceTransform};
 use gl::{self, types::GLchar};
-use std::{collections::HashMap, ffi::CString, ptr, str};
+use std::{collections::HashMap, ffi::CString, mem, ptr, str};
 
 pub type ShaderProgramId = u32;
 
@@ -11,6 +14,13 @@ pub type ShaderProgramId = u32;
 pub enum ShaderType {
     SimpleShader,
     TextShader,
+    LightShader,
+}
+
+#[derive(PartialEq, Eq, Hash, Debug)]
+pub enum UboType {
+    SpaceTransform,
+    Lights,
 }
 
 pub struct ShaderFlags {
@@ -27,25 +37,90 @@ impl ShaderFlags {
     }
 }
 
-/// Map vertex array object to shader.
-pub struct ShaderProgram {
-    pub program_id: ShaderProgramId,
-}
-
 /// We use one vao per shader; I guess that it's the
 /// good approach for now.
 pub struct ShaderManager {
-    pub list: HashMap<ShaderType, ShaderProgram>,
+    pub list: HashMap<ShaderType, ShaderProgramId>,
+    pub ubo: HashMap<UboType, u32>,
 }
 
 impl ShaderManager {
-    pub fn new() -> Self {
+    pub fn build() -> Self {
         let mut list = HashMap::new();
-        list.insert(simple::TYPE, simple::get_program());
+        let mut ubo = HashMap::new();
 
-        list.insert(text::TYPE, text::get_program());
+        // Compile and link shaders.
+        {
+            let program_id = create_shader_program(
+                simple::VERTEX_SOURCE,
+                simple::FRAGMENT_SOURCE,
+                "",
+            );
+            list.insert(ShaderType::SimpleShader, program_id);
+        }
 
-        Self { list }
+        {
+            let program_id = create_shader_program(
+                text::VERTEX_SOURCE,
+                text::FRAGMENT_SOURCE,
+                "",
+            );
+            list.insert(ShaderType::TextShader, program_id);
+        }
+
+        {
+            let program_id = create_shader_program(
+                light::VERTEX_SOURCE,
+                light::FRAGMENT_SOURCE,
+                "",
+            );
+            list.insert(ShaderType::LightShader, program_id);
+        }
+
+        // Right now we have 2 UBOs.
+        // SpaceTransform and Lights ones.
+        //
+        // Binding point 0 for the projection.
+        // Binding point 1 for the light.
+
+        // We bind those blocks to all shaders for now.
+        for program in list.values() {
+            bind_ubo(*program, "SpaceTransform", 0);
+            bind_ubo(*program, "Lights", 1);
+        }
+
+        // Generate all ubo...
+        let space_ubo =
+            opengl::generate_ubo(mem::size_of::<SpaceTransform>(), 0);
+
+        let light_ubo = opengl::generate_ubo(mem::size_of::<f32>(), 1);
+
+        ubo.insert(UboType::SpaceTransform, space_ubo);
+        ubo.insert(UboType::Lights, light_ubo);
+
+        Self { list, ubo }
+    }
+
+    pub fn get_program(&self, shader_type: ShaderType) -> ShaderProgramId {
+        let program = self
+            .list
+            .get(&shader_type)
+            .expect("Error while retrieving shader.");
+
+        *program
+    }
+
+    pub fn get_ubo(&self, ubo_type: UboType) -> u32 {
+        *self
+            .ubo
+            .get(&ubo_type)
+            .expect("Error while retrieving shader.")
+    }
+
+    pub fn activate(&self, shader_type: ShaderType) -> ShaderProgramId {
+        let program_id = self.get_program(shader_type);
+        opengl::use_shader_program(program_id);
+        program_id
     }
 }
 
@@ -53,10 +128,28 @@ impl ShaderManager {
 impl Drop for ShaderManager {
     fn drop(&mut self) {
         for program in self.list.values() {
-            unsafe { gl::DeleteProgram(program.program_id) }
+            unsafe { gl::DeleteProgram(*program) }
         }
     }
 }
+
+///
+/// UBO SETTINGS.
+///
+/// SpaceTransform UBO (binded to 0).
+pub fn set_ubo_space_transform(space_transform: &SpaceTransform) {
+    let ubo = SHADERS.get_ubo(UboType::SpaceTransform);
+    // The size of a Mat4 is 64 bytes
+    let mat4_size = 64;
+
+    // Order is important and should match the shader ubo.
+    opengl::set_ubo(ubo, 0, space_transform.gui);
+    opengl::set_ubo(ubo, mat4_size, space_transform.projection);
+    opengl::set_ubo(ubo, mat4_size * 2, space_transform.view);
+}
+///
+///
+///
 
 pub fn set_matrix4(
     shader_id: ShaderProgramId,
@@ -99,6 +192,21 @@ pub fn set_bool(shader_id: ShaderProgramId, var_name: &str, value: bool) {
     let shader_variable = get_location(shader_id, var_name);
     unsafe {
         gl::Uniform1i(shader_variable, value as i32);
+    }
+}
+
+// Bind uniform blocks to binding specific point.
+pub fn bind_ubo(
+    shader_id: ShaderProgramId,
+    block_name: &str,
+    binding_point: u32,
+) {
+    let name = CString::new(block_name)
+        .expect("Crash while converting Rust str to C string");
+
+    unsafe {
+        let block_index = gl::GetUniformBlockIndex(shader_id, name.as_ptr());
+        gl::UniformBlockBinding(shader_id, block_index, binding_point);
     }
 }
 

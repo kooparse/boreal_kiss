@@ -16,6 +16,10 @@ impl Input {
         }
     }
 
+    pub fn is_nothing_pressed(&self) -> bool {
+        self.keyboard.is_empty()
+    }
+
     /// Add or remove a specified key if pressed or not.
     pub fn update_key(&mut self, keycode: Key, is_pressed: bool) {
         if is_pressed {
@@ -79,20 +83,15 @@ impl Input {
         self.modifiers = modifier;
     }
 
-    pub fn pressed(&mut self, keycode: Key, mut callback: impl FnMut()) {
-        if self.is_pressed(keycode) {
-            callback();
-        }
-    }
-
-    /// Will call only once the closure when the given closure is pressed.
-    pub fn pressed_once(&mut self, keycode: Key, mut callback: impl FnMut()) {
+    pub fn is_pressed_once(&mut self, keycode: Key) -> bool {
         if let Some(pressed) = self.keyboard.get_mut(&keycode) {
             if !pressed.once {
                 pressed.once = true;
-                callback();
+                return true;
             }
         }
+
+        false
     }
 
     /// TODO: Should debounce/throttle here.
@@ -103,17 +102,15 @@ impl Input {
     }
 
     /// Will call only once the closure when the given closure is pressed.
-    pub fn clicked(
-        &mut self,
-        button: MouseButton,
-        mut callback: impl FnMut(&Cursor),
-    ) {
+    pub fn is_clicked_once(&mut self, button: MouseButton) -> bool {
         if let Some(clicked) = self.mouse.get_mut(&button) {
             if !clicked.once {
                 clicked.once = true;
-                callback(&self.cursor);
+                return true;
             }
         }
+
+        false
     }
 
     pub fn clear(&mut self) {
