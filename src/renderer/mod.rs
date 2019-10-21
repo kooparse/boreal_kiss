@@ -11,9 +11,9 @@ mod light;
 mod draw;
 
 // Internal...
-use nalgebra_glm as glm;
 use font::Font;
 use draw::*;
+use crate::global::*;
 use crate::entities::Entities;
 // Pub
 pub use light::{LightProbes, SunLight};
@@ -23,14 +23,6 @@ pub use types::{Rgba,Rgb, Vector};
 pub use text::Text;
 pub use shaders::ShaderManager;
 
-pub struct SpaceTransform {
-    // Orthographic matrix.
-    gui: glm::Mat4,
-    // Perspective matrix.
-    projection: glm::Mat4,
-    view: glm::Mat4,
-}
-
 #[derive(Default)]
 pub struct DebugInfo {
     pub draw_call: u32,
@@ -38,15 +30,9 @@ pub struct DebugInfo {
     pub is_wireframe: bool,
 }
 
-
 pub struct Renderer {
-    // Some options like resolution, etc...
     back_buffer_color: Rgba,
-    // Store all our mesh there (only the gpu information).
-    // mesh_storage: Storage<LoadedMesh>,
-    // For now, only one font...
     font: Font,
-
     pub debug_info: DebugInfo,
 }
 
@@ -64,18 +50,6 @@ impl Renderer {
         // First paint the back_buffer in the default color.
         opengl::clear(&back_buffer_color);
 
-        // let proj = glm::perspective::<f32>(
-        //     1200. / 800.,
-        //     45.0,
-        //     0.1,
-        //     100.0,
-        // );
-
-        // We want 3 mat4 (3 * 64 bytes).
-        let ubo = opengl::generate_ubo(64, 0);
-        // opengl::set_ubo(ubo, 0, proj);
-
-
         let font = Font::new(
             "assets/fonts/Helvetica/helvetica.json",
             "assets/fonts/Helvetica/helvetica.png",
@@ -89,6 +63,10 @@ impl Renderer {
     }
 
     pub fn draw(&mut self, entities: &Entities) {
+        // Updates UBOs...
+        SHADERS.update_all_ubo();
+
+
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
 

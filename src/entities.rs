@@ -1,8 +1,7 @@
+use crate::renderer::{LightProbes, LoadedMesh, Text};
 use std::fmt::Debug;
 use std::iter::Iterator;
 use std::mem::*;
-
-use crate::renderer::{LightProbes, LoadedMesh, Text};
 
 #[derive(Debug)]
 pub struct Wall;
@@ -138,7 +137,6 @@ impl<T: Debug> Arena<T> {
                 free_indexes.push(index);
             });
 
-
         self.free_handles.extend(free_indexes);
     }
 
@@ -147,7 +145,6 @@ impl<T: Debug> Arena<T> {
             .iter()
             .any(|h| h == handle && h.is_dirty == true)
     }
-
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.handles
@@ -188,8 +185,8 @@ impl PartialEq for MemoryHandle {
 
 #[cfg(test)]
 mod tests {
-    use std::panic::catch_unwind;
     use super::*;
+    use std::panic::catch_unwind;
 
     #[test]
     fn arena_alloc() {
@@ -245,7 +242,6 @@ mod tests {
         assert_eq!(arena.data[0], false);
     }
 
-
     #[test]
     fn iter_data() {
         let mut arena = Arena::<bool>::size_alloc(10);
@@ -270,7 +266,6 @@ mod tests {
         let handle_0 = arena.insert(true);
         let _ = arena.insert(true);
         let _ = arena.insert(true);
-
 
         assert_eq!(*arena.get(&handle_0), true);
 

@@ -6,13 +6,13 @@ pub const VERTEX_SOURCE: &str = r#"
     layout (location = 1) in vec4 a_color;
     layout (location = 2) in vec2 a_uv_coords[2];
 
-    // uniform Projections {
-    //     mat4 projection;
-    // };
+    uniform Projections {
+        mat4 gui;
+        mat4 perspective;
+        mat4 view;
+    };
 
-    uniform mat4 projection;
     uniform mat4 model;
-    uniform mat4 view;
 
     out VERTEX_OUT {
         vec4 color;
@@ -20,7 +20,7 @@ pub const VERTEX_SOURCE: &str = r#"
     } vs_out;
 
     void main() {
-       	gl_Position = projection * view * model * vec4(a_pos, 1.0);
+       	gl_Position = perspective * view * model * vec4(a_pos, 1.0);
         vs_out.color = a_color;
 	vs_out.uv_coords = a_uv_coords;
     }

@@ -3,9 +3,10 @@ pub mod simple;
 pub mod text;
 
 use crate::global::*;
-use super::{opengl, SpaceTransform};
+use super::opengl;
 use gl::{self, types::GLchar};
 use std::{collections::HashMap, ffi::CString, mem, ptr, str};
+use nalgebra_glm as glm;
 
 pub type ShaderProgramId = u32;
 
@@ -19,8 +20,14 @@ pub enum ShaderType {
 
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub enum UboType {
-    SpaceTransform,
-    Lights,
+    WorldTransformUbo,
+}
+
+struct WorldTransformUbo {
+    // Ortho for GUI.
+    gui: glm::Mat4,
+    perspective: glm::Mat4,
+    view: glm::Mat4,
 }
 
 #[derive(Debug)]
@@ -86,20 +93,41 @@ impl ShaderManager {
 
         // We bind those blocks to all shaders for now.
         for program in list.values() {
-            bind_ubo(*program, "SpaceTransform", 0);
+            bind_ubo(*program, "Projections", 0);
             bind_ubo(*program, "Lights", 1);
         }
 
         // Generate all ubo...
         let space_ubo =
-            opengl::generate_ubo(mem::size_of::<SpaceTransform>(), 0);
+            opengl::generate_ubo(mem::size_of::<WorldTransformUbo>(), 0);
+        ubo.insert(UboType::WorldTransformUbo, space_ubo);
 
-        let light_ubo = opengl::generate_ubo(mem::size_of::<f32>(), 1);
-
-        ubo.insert(UboType::SpaceTransform, space_ubo);
-        ubo.insert(UboType::Lights, light_ubo);
+        // let light_ubo = opengl::generate_ubo(mem::size_of::<f32>(), 1);
+        // ubo.insert(UboType::Lights, light_ubo);
 
         Self { list, ubo }
+    }
+
+    pub fn update_all_ubo(&self) {
+        let view = *VIEW_MATRIX.lock().unwrap();
+        let perspective = *PERSPECTIVE_MATRIX.lock().unwrap();
+        let gui = *ORTHO_MATRIX.lock().unwrap();
+
+        let ubo = self.get_ubo(UboType::WorldTransformUbo);
+        let updated_data = WorldTransformUbo {
+            gui,
+            perspective,
+            view,
+        };
+
+        let mut offset = 0;
+        opengl::set_ubo(ubo, offset, updated_data.gui);
+        offset += mem::size_of_val(&updated_data.gui) as isize;
+
+        opengl::set_ubo(ubo, offset, updated_data.perspective);
+        offset += mem::size_of_val(&updated_data.perspective) as isize;
+
+        opengl::set_ubo(ubo, offset, updated_data.view);
     }
 
     pub fn get_program(&self, shader_type: ShaderType) -> ShaderProgramId {
@@ -134,23 +162,6 @@ impl Drop for ShaderManager {
     }
 }
 
-///
-/// UBO SETTINGS.
-///
-/// SpaceTransform UBO (binded to 0).
-pub fn set_ubo_space_transform(space_transform: &SpaceTransform) {
-    let ubo = SHADERS.get_ubo(UboType::SpaceTransform);
-    // The size of a Mat4 is 64 bytes
-    let mat4_size = 64;
-
-    // Order is important and should match the shader ubo.
-    opengl::set_ubo(ubo, 0, space_transform.gui);
-    opengl::set_ubo(ubo, mat4_size, space_transform.projection);
-    opengl::set_ubo(ubo, mat4_size * 2, space_transform.view);
-}
-///
-///
-///
 
 pub fn set_matrix4(
     shader_id: ShaderProgramId,
