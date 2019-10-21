@@ -34,6 +34,7 @@ pub struct Vertex {
     pub indices: Vec<u32>,
 }
 
+#[derive(Debug)]
 pub struct LoadedMesh {
     pub is_hidden: bool,
     pub world_pos: Vector,

@@ -23,6 +23,7 @@ pub enum UboType {
     Lights,
 }
 
+#[derive(Debug)]
 pub struct ShaderFlags {
     pub has_uv: bool,
     pub has_multi_uv: bool,

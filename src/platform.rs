@@ -15,28 +15,6 @@ use glutin::{
 use nalgebra_glm as glm;
 use std::convert::From;
 
-pub fn check_platform_supported() {
-    let _target_os: &str = if cfg!(target_os = "macos") {
-        "macOS"
-    } else if cfg!(target_os = "windows") {
-        "Windows"
-    } else {
-        panic!("Target system not currently supported");
-    };
-
-    let _target_arch: &str = if cfg!(target_arch = "x86_64") {
-        "x86_64"
-    } else {
-        panic!("Architecture not currently supported")
-    };
-
-    dbg!(_target_os, _target_arch);
-}
-
-pub fn is_desktop() -> bool {
-    cfg!(target_os = "macos") || cfg!(target_os = "windows")
-}
-
 /// Construct a window for all desktop with the
 /// opengl v4.1 loaded in the context. The 4.1 version is
 /// the latest opengl version available for the currently latest
@@ -54,6 +32,10 @@ impl WinitPlatform {
         with_vsync: bool,
         multisampling: u16,
     ) -> Self {
+        if !is_desktop() {
+            panic!("Only desktop platforms is currently supported");
+        }
+
         // Dimensions based on factor dpi (LogicalSize).
         let dimensions =
             dpi::LogicalSize::new(f64::from(width), f64::from(height));
@@ -322,4 +304,26 @@ impl WinitPlatform {
 
         self.should_close = should_close;
     }
+}
+
+pub fn check_platform_supported() {
+    let _target_os: &str = if cfg!(target_os = "macos") {
+        "macOS"
+    } else if cfg!(target_os = "windows") {
+        "Windows"
+    } else {
+        panic!("Target system not currently supported");
+    };
+
+    let _target_arch: &str = if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else {
+        panic!("Architecture not currently supported")
+    };
+
+    dbg!(_target_os, _target_arch);
+}
+
+pub fn is_desktop() -> bool {
+    cfg!(target_os = "macos") || cfg!(target_os = "windows")
 }

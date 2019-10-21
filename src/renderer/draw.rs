@@ -7,7 +7,7 @@ use super::{
 use nalgebra_glm as glm;
 use std::ptr;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DrawMode {
     Triangles,
     Lines,

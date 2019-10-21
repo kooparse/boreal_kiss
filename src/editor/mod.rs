@@ -3,32 +3,20 @@ mod debug_camera;
 use crate::global::*;
 use crate::input::{Input, Key, MouseButton};
 use crate::platform::WinitPlatform;
-use crate::renderer::{GenerationId, Renderer, Text, Vector};
+use crate::entities::Entities;
+use crate::renderer::{Renderer, Text, Vector};
 use crate::time::{Time, Timer};
 use debug_camera::Camera;
 
 #[derive(Default)]
 pub struct Editor {
     pub camera: Camera,
-    text_dt_id: GenerationId,
-    text_mesh_id: GenerationId,
     timer: Timer,
 }
 
 impl Editor {
-    pub fn new(renderer: &mut Renderer) -> Self {
+    pub fn new() -> Self {
         Self {
-            text_dt_id: renderer.add_text(Text {
-                position: Vector(10., 725., 0.),
-                font_size: 31.,
-                ..Text::default()
-            }),
-            text_mesh_id: renderer.add_text(Text {
-                position: Vector(10., 750., 0.),
-                font_size: 31.,
-                ..Text::default()
-            }),
-
             timer: Timer::new(0.5),
             ..Default::default()
         }
@@ -36,25 +24,39 @@ impl Editor {
 
     pub fn run(
         &mut self,
+        entities: &mut Entities,
         platform: &WinitPlatform,
         input: &mut Input,
         renderer: &mut Renderer,
         time: &Time,
     ) {
-        // Toggle wireframe mode on this key when "0" is pressed.
-        if input.is_pressed_once(Key::Key0) {
+
+        if input.modifiers.shift && input.is_pressed_once(Key::P) {
             renderer.toggle_wireframe();
         };
 
         // Timer to smooth debug text.
         if self.timer.is_passed(time.dt, 0.15) {
-            renderer.update_text(self.text_mesh_id).content =
+            // TODO: Careful here... we flush all the GUI text per frame.
+            entities.text_widgets.flush();
+
+            let content =
                 format!("Meshes rendered: {}", renderer.debug_info.draw_call);
+            entities.text_widgets.insert(Text {
+                position: Vector(10., 725., 0.),
+                font_size: 31.,
+                content, 
+                ..Text::default()
+            });
 
-            let text_dt_id = (time.dt * 1000.).round();
-            let framerate_text = renderer.update_text(self.text_dt_id);
 
-            framerate_text.content = format!("Tick: {} ms", text_dt_id);
+            let content = format!("Tick: {} ms", (time.dt * 1000.).round());
+            entities.text_widgets.insert(Text {
+                position: Vector(10., 750., 0.),
+                font_size: 31.,
+                content, 
+                ..Text::default()
+            });
         }
 
         if input.is_clicked(MouseButton::Right) {

@@ -3,7 +3,6 @@ mod opengl;
 pub mod primitives;
 mod ray;
 mod shaders;
-mod storage;
 mod text;
 mod texture;
 mod mesh;
@@ -13,16 +12,14 @@ mod draw;
 
 // Internal...
 use nalgebra_glm as glm;
-use mesh::LoadedMesh;
 use font::Font;
-use storage::{Storage};
 use draw::*;
+use crate::entities::Entities;
 // Pub
-pub use light::{LightSource, SunLight};
-pub use mesh::Mesh;
+pub use light::{LightProbes, SunLight};
+pub use mesh::{Mesh, LoadedMesh};
 pub use opengl::GpuBound;
 pub use types::{Rgba,Rgb, Vector};
-pub use storage::GenerationId;
 pub use text::Text;
 pub use shaders::ShaderManager;
 
@@ -46,12 +43,9 @@ pub struct Renderer {
     // Some options like resolution, etc...
     back_buffer_color: Rgba,
     // Store all our mesh there (only the gpu information).
-    mesh_storage: Storage<LoadedMesh>,
+    // mesh_storage: Storage<LoadedMesh>,
     // For now, only one font...
-    default_font: Font,
-    // Store all the text that should be rendered on the screen.
-    text_storage: Storage<Text>,
-    light_storage: Storage<SunLight>,
+    font: Font,
 
     pub debug_info: DebugInfo,
 }
@@ -82,95 +76,46 @@ impl Renderer {
         // opengl::set_ubo(ubo, 0, proj);
 
 
-        let default_font = Font::new(
+        let font = Font::new(
             "assets/fonts/Helvetica/helvetica.json",
             "assets/fonts/Helvetica/helvetica.png",
         );
 
         Self {
             back_buffer_color,
-            mesh_storage: Storage::default(),
-            text_storage: Storage::default(),
-            light_storage: Storage::default(),
             debug_info: DebugInfo::default(),
-            default_font, 
+            font, 
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, entities: &Entities) {
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
-        //
+
         // Render all our meshes to the screen.
-        for mesh in self.mesh_storage.items.values() {
+        for mesh in entities.meshes.iter() {
             self.debug_info.draw_call +=  1;
             draw_mesh(mesh);
         }
 
-        for sun_light in self.light_storage.items.values() {
-            draw_sun_light(sun_light);
-        }
-        //
-        // Render all our texts to the screen.
-        for text in self.text_storage.items.values_mut() {
+        // Render all our light probes into the scene.
+        for light in entities.light_probes.iter() {
             self.debug_info.draw_call +=  1;
-            draw_text(&mut self.default_font, text);
+            match light {
+                LightProbes::Sun(sun) => draw_sun_light(sun),
+            }
         }
-    }
 
-    pub fn add_meshes(&mut self, objects: Vec<Mesh>) -> Vec<GenerationId> {
-        objects
-            .iter()
-            .map(|object| self.mesh_storage.push(LoadedMesh::from(object)))
-            .collect()
-    }
-
-    pub fn add_text(
-        &mut self,
-        text: Text,
-    ) -> GenerationId {
-        self.text_storage.push(text)
-    }
-
-    pub fn update_text(
-        &mut self,
-        text_id: GenerationId,
-    ) -> &mut Text {
-        if let Some(to_replace) = self.text_storage.get_mut(text_id) {
-            to_replace
-        } else {
-            unimplemented!();
+        // Render all our GUI texts to the screen.
+        for text in entities.text_widgets.iter() {
+            self.debug_info.draw_call +=  1;
+            draw_text(&mut self.font, text);
         }
-    }
-
-    // pub fn remove_text(&mut self, id: GenerationId) {
-    //     self.text_storage.remove(id);
-    // }
-
-    // pub fn remove_mesh(&mut self, id: GenerationId) {
-    //     self.mesh_storage.remove(id);
-    // }
-
-    /// The method shrink_to_fit will frees any allocated
-    /// memory that is not used.
-    pub fn flush_meshes(&mut self) {
-        self.mesh_storage.clear();
     }
 
     pub fn clear_screen(&self) {
         opengl::clear(&self.back_buffer_color);
     }
-
-    // pub fn add_ray(
-    //     &mut self,
-    //     origin: Vector,
-    //     direction: Vector,
-    //     length: f32,
-    // ) {
-    //     let ray = Ray::new(origin, direction, length);
-    //     let name = format!("ray: {:?}", direction);
-    //     self.add_mesh(primitives::create_line(&name, ray));
-    // }
 
     pub fn toggle_wireframe(&mut self) {
         unsafe {

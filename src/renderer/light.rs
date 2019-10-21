@@ -1,9 +1,11 @@
 use super::{Vector, Rgba};
 
-pub enum LightSource {
+#[derive(Debug)]
+pub enum LightProbes {
     Sun(SunLight),
 }
 
+#[derive(Debug)]
 pub struct SunLight {
     position: Vector,
     direction: Vector,
