@@ -1,14 +1,20 @@
 pub const VERTEX_SOURCE: &str = r#"
     #version 330 core
     layout (location = 0) in vec4 vertex;
+    layout (std140) uniform;
     out vec2 TexCoords;
 
-    uniform mat4 projection;
+    uniform Projections {
+        mat4 gui;
+        mat4 _;
+        mat4 _;
+    };
+
     uniform mat4 model;
     uniform float font_size;
 
     void main() {
-        gl_Position = projection * model * vec4(
+        gl_Position = gui * model * vec4(
             vertex.xy * font_size, 0.0, 1.0);
 
         TexCoords = vertex.zw;

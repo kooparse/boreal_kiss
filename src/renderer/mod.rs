@@ -66,7 +66,6 @@ impl Renderer {
         // Updates UBOs...
         SHADERS.update_all_ubo();
 
-
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
 

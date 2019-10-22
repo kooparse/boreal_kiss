@@ -42,8 +42,11 @@ impl Editor {
 
             let content =
                 format!("Meshes rendered: {}", renderer.debug_info.draw_call);
+            let (x, y) = unsafe {
+                (0.01 * SCREEN_WIDTH, 0.86 * SCREEN_HEIGHT)
+            };
             entities.text_widgets.insert(Text {
-                position: Vector(10., 725., 0.),
+                position: Vector(x, y, 0.),
                 font_size: 31.,
                 content, 
                 ..Text::default()
@@ -51,8 +54,11 @@ impl Editor {
 
 
             let content = format!("Tick: {} ms", (time.dt * 1000.).round());
+            let (x, y) = unsafe {
+                (0.01 * SCREEN_WIDTH, 0.9 * SCREEN_HEIGHT)
+            };
             entities.text_widgets.insert(Text {
-                position: Vector(10., 750., 0.),
+                position: Vector(x, y, 0.),
                 font_size: 31.,
                 content, 
                 ..Text::default()
