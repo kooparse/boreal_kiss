@@ -21,7 +21,7 @@ pub struct Entities {
 
 /// Memory arena.
 pub struct Arena<T: Debug> {
-    data: Vec<T>,
+    pub data: Vec<T>,
     handles: Vec<MemoryHandle>,
     // Index of dirty handles.
     free_handles: Vec<usize>,
@@ -146,17 +146,24 @@ impl<T: Debug> Arena<T> {
             .any(|h| h == handle && h.is_dirty == true)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &MemoryHandle)> {
         self.handles
             .iter()
             .filter(|h| h.is_dirty == false)
-            .map(move |h| &self.data[h.value])
+            .map(move |h| (&self.data[h.value], h))
     }
+
+    // pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+    //     self.handles
+    //         .iter_mut()
+    //         .filter(|h| h.is_dirty == false)
+    //         .map(|h| &mut self.data[h.value])
+    // }
 }
 
 impl<T: Debug> Default for Arena<T> {
     fn default() -> Self {
-        Arena::<T>::alloc(10)
+        Arena::<T>::alloc(20)
     }
 }
 

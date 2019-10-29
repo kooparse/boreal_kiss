@@ -67,8 +67,16 @@ impl Input {
     }
 
     /// Return true is specified key is clicked.
-    pub fn is_clicked(&self, button: MouseButton) -> bool {
-        self.mouse.contains_key(&button)
+    pub fn is_clicked(&mut self, button: MouseButton) -> bool {
+        let is_clicked = self.mouse.contains_key(&button);
+
+        if is_clicked {
+            self.cursor.is_dragged = true;
+        } else {
+            self.cursor.is_dragged = false;
+        }
+
+        is_clicked
     }
 
     /// Remove specified keycode.
@@ -95,10 +103,13 @@ impl Input {
     }
 
     /// TODO: Should debounce/throttle here.
-    pub fn on_cursor_moved(&self, mut callback: impl FnMut(&Cursor)) {
-        if self.cursor.has_moved {
-            callback(&self.cursor);
-        }
+    pub fn is_cursor_moved(&self) -> bool {
+        self.cursor.has_moved
+    }
+
+    /// TODO: Should debounce/throttle here.
+    pub fn is_dragged(&self) -> bool {
+        self.cursor.is_dragged
     }
 
     /// Will call only once the closure when the given closure is pressed.
@@ -131,6 +142,7 @@ pub struct Cursor {
     // Used for 3D camera...
     pub delta: (f64, f64),
     pub has_moved: bool,
+    pub is_dragged: bool,
 }
 
 /// List of all keys available.

@@ -5,13 +5,56 @@ use super::DrawMode;
 use super::GpuBound;
 use super::Vector;
 use std::cmp::min;
+use crate::colliders::{Collider, BoundingBox};
 
 use super::types::Rgba;
-use nalgebra_glm as glm;
 use gltf;
+use nalgebra_glm as glm;
 
 pub type Vector3 = Vector;
 pub type UV = glm::TVec2<f32>;
+
+#[derive(Debug, Copy, Clone)]
+pub struct Transform {
+    pub position: Vector,
+    pub rotation: Vector,
+    pub scale: Vector,
+}
+
+impl Transform {
+    pub fn new(position: Vector, rotation: Vector, scale: Vector) -> Self {
+        Self {
+            position,
+            rotation,
+            scale,
+        }
+    }
+
+    pub fn from_pos(position: Vector) -> Self {
+        Self {
+            position,
+            ..Default::default()
+        }
+    }
+
+    pub fn to_glm(&self) -> (glm::Vec3, glm::Vec3, glm::Vec3) {
+        (
+            self.position.to_glm(),
+            self.rotation.to_glm(),
+            self.scale.to_glm(),
+        )
+    }
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            position: Vector::default(),
+            rotation: Vector::default(),
+            scale: Vector(1., 1., 1.),
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct UVSet {
@@ -36,9 +79,15 @@ pub struct Vertex {
 
 #[derive(Debug)]
 pub struct LoadedMesh {
+    // Debug from editor...
+    pub is_hover: bool,
+    pub is_selected: bool,
+    pub is_dragged: bool,
+
     pub is_hidden: bool,
-    pub world_pos: Vector,
+    pub transform: Transform,
     pub mode: DrawMode,
+    pub collider: Option<Collider>,
     pub(crate) gpu_bound: GpuBound,
     pub flags: ShaderFlags,
 }
@@ -48,12 +97,13 @@ pub struct Mesh<'n> {
     pub vertex: Vertex,
     pub textures: Vec<Texture>,
     pub shader_type: ShaderType,
-    pub world_pos: Vector,
+    pub transform: Transform,
     pub mode: DrawMode,
+    pub collider: Option<Collider>,
 }
 
-impl<'n> Mesh<'_> {
-    pub fn from_gltf(path: &'n str, world_pos: Vector, scale: f32) -> Mesh<'n> {
+impl<'n> Mesh<'n> {
+    pub fn from_gltf(path: &'n str, position: Vector, scale: f32) -> Mesh<'n> {
         let (model, buffers, images) = gltf::import(path).unwrap();
         let mut vertices: Vec<Vertex> = vec![];
 
@@ -67,13 +117,7 @@ impl<'n> Mesh<'_> {
                     reader
                         .read_positions()
                         .unwrap()
-                        .map(|pos| {
-                            Vector(
-                                pos[0] * scale,
-                                pos[1] * scale,
-                                pos[2] * scale,
-                            )
-                        })
+                        .map(|pos| Vector(pos[0], pos[1], pos[2]))
                         .collect()
                 };
 
@@ -116,13 +160,22 @@ impl<'n> Mesh<'_> {
             .map(|img| Texture::new((img.width, img.height), img.pixels))
             .collect::<_>();
 
+
+        // TODO: Careful here...
+        let bounding_box = BoundingBox::from_vertex(&vertices[0]);
+
         Mesh {
             name: path,
+            collider: Some(Collider::Sphere(bounding_box)),
             vertex: vertices.remove(0),
-            world_pos,
             textures,
             shader_type: ShaderType::SimpleShader,
             mode: DrawMode::Triangles,
+            transform: Transform::new(
+                position,
+                Vector::default(),
+                Vector(scale, scale, scale),
+            ),
         }
     }
 }
@@ -168,8 +221,12 @@ impl<'n> From<&Mesh<'n>> for LoadedMesh {
 
         LoadedMesh {
             is_hidden: false,
+            is_hover: false,
+            is_dragged: false,
+            is_selected: false,
             mode: object.mode,
-            world_pos: object.world_pos,
+            transform: object.transform,
+            collider: object.collider,
             gpu_bound,
             flags,
         }

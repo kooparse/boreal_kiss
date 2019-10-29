@@ -1,4 +1,4 @@
-use std::ops::Mul;
+use std::ops::{Mul, Add};
 use nalgebra_glm as glm;
 use std::cmp::PartialEq;
 
@@ -10,7 +10,7 @@ use std::cmp::PartialEq;
 
 /// Define RGBA color.
 /// From 0 (black) to 1 (white).
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Rgba {
     pub r: f32,
     pub g: f32,
@@ -64,7 +64,7 @@ impl From<&Rgb> for Rgba {
 
 /// Define RGBA color.
 /// From 0 (black) to 1 (white).
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -128,6 +128,24 @@ impl Mul<f32> for Vector {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs, self.1 * rhs, self.2 * rhs)
+
+    }
+}
+
+impl Add<f32> for Vector {
+    type Output = Self;
+
+    fn add(self, rhs: f32) -> Self::Output {
+        Self(self.0 + rhs, self.1 + rhs, self.2 + rhs)
+
+    }
+}
+
+impl Add<Vector> for Vector {
+    type Output = Self;
+
+    fn add(self, rhs: Vector) -> Self::Output {
+        Self(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2)
 
     }
 }

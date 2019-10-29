@@ -201,6 +201,8 @@ impl WinitPlatform {
                                         .update_key(Key::L, is_pressed),
                                     VirtualKeyCode::M => game_input
                                         .update_key(Key::M, is_pressed),
+                                    VirtualKeyCode::N => game_input
+                                        .update_key(Key::N, is_pressed),
                                     VirtualKeyCode::O => game_input
                                         .update_key(Key::O, is_pressed),
                                     VirtualKeyCode::P => game_input

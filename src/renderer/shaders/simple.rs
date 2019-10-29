@@ -36,6 +36,9 @@ pub const FRAGMENT_SOURCE: &str = r#"
     uniform sampler2D texture0;
     uniform sampler2D texture1;
 
+    uniform bool is_active;
+    uniform bool is_hover;
+
     in VERTEX_OUT {
         vec4 color;
         vec2 uv_coords[2];
@@ -45,7 +48,7 @@ pub const FRAGMENT_SOURCE: &str = r#"
     out vec4 FragColor;
 
     void main() {
-        vec4 color = vec4(0.0, 1.0, 1.0, 1.0);
+        vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
 
         if (HAS_VERT_COLORS) {
             color = vertex_in.color;
@@ -59,6 +62,11 @@ pub const FRAGMENT_SOURCE: &str = r#"
             color = texture(texture0, vertex_in.uv_coords[0]) 
                 + texture(texture1, vertex_in.uv_coords[1]);
         }
+
+        if (is_hover) {
+            color = vec4(color.xyz, 0.7);
+        }
+
 
         FragColor = color;
     }

@@ -4,6 +4,7 @@ mod entities;
 mod game_loop;
 mod global;
 mod input;
+mod colliders;
 mod platform;
 mod renderer;
 mod time;

@@ -1,27 +1,26 @@
+mod draw;
 mod font;
+mod light;
+mod mesh;
 mod opengl;
 pub mod primitives;
-mod ray;
 mod shaders;
 mod text;
 mod texture;
-mod mesh;
 mod types;
-mod light;
-mod draw;
 
 // Internal...
-use font::Font;
-use draw::*;
-use crate::global::*;
 use crate::entities::Entities;
+use crate::global::*;
+use draw::*;
+use font::Font;
 // Pub
 pub use light::{LightProbes, SunLight};
-pub use mesh::{Mesh, LoadedMesh};
+pub use mesh::{LoadedMesh, Mesh, Transform, Vertex};
 pub use opengl::GpuBound;
-pub use types::{Rgba,Rgb, Vector};
-pub use text::Text;
 pub use shaders::ShaderManager;
+pub use text::Text;
+pub use types::{Rgb, Rgba, Vector};
 
 #[derive(Default)]
 pub struct DebugInfo {
@@ -31,6 +30,7 @@ pub struct DebugInfo {
 }
 
 pub struct Renderer {
+    bbox_mesh: LoadedMesh,
     back_buffer_color: Rgba,
     font: Font,
     pub debug_info: DebugInfo,
@@ -55,10 +55,14 @@ impl Renderer {
             "assets/fonts/Helvetica/helvetica.png",
         );
 
+        let bbox_mesh =
+            LoadedMesh::from(&primitives::create_cube(Vector::default()));
+
         Self {
+            bbox_mesh,
             back_buffer_color,
             debug_info: DebugInfo::default(),
-            font, 
+            font,
         }
     }
 
@@ -70,22 +74,27 @@ impl Renderer {
         self.debug_info.draw_call = 0;
 
         // Render all our meshes to the screen.
-        for mesh in entities.meshes.iter() {
-            self.debug_info.draw_call +=  1;
+        for (mesh, _) in entities.meshes.iter() {
+            self.debug_info.draw_call += 1;
+
+            if mesh.is_selected {
+                draw_bbox(mesh, &self.bbox_mesh);
+            }
+
             draw_mesh(mesh);
         }
 
         // Render all our light probes into the scene.
-        for light in entities.light_probes.iter() {
-            self.debug_info.draw_call +=  1;
+        for (light, _) in entities.light_probes.iter() {
+            self.debug_info.draw_call += 1;
             match light {
                 LightProbes::Sun(sun) => draw_sun_light(sun),
             }
         }
 
         // Render all our GUI texts to the screen.
-        for text in entities.text_widgets.iter() {
-            self.debug_info.draw_call +=  1;
+        for (text, _) in entities.text_widgets.iter() {
+            self.debug_info.draw_call += 1;
             draw_text(&mut self.font, text);
         }
     }
@@ -105,6 +114,4 @@ impl Renderer {
             }
         }
     }
-
-
 }
