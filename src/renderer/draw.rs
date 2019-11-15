@@ -1,7 +1,7 @@
 use super::{
     opengl,
     shaders::{self, ShaderType},
-    Font, LoadedMesh, SunLight, Text,
+    Font, Mesh, SunLight, Text, Transform,
 };
 use crate::colliders::{BoundingBox, Collider};
 use crate::global::*;
@@ -16,42 +16,29 @@ pub enum DrawMode {
 }
 
 // obb
-pub fn draw_bbox(object: &LoadedMesh, bbox_mesh: &LoadedMesh) {
-    let prog_id = SHADERS.activate(ShaderType::SimpleShader);
-    opengl::use_vao(bbox_mesh.gpu_bound.vao);
-
-    let (pos, rotation, scale) = object.transform.to_glm();
-
-    let identity = glm::identity();
-    let scale_matrix = glm::scale(&identity, &scale);
-    let rotation_matrix = {
-        let mut matrix = glm::rotate_x(&identity, rotation.x);
-        matrix = glm::rotate_y(&matrix, rotation.y);
-        matrix = glm::rotate_z(&matrix, rotation.z);
-
-        matrix
-    };
-
-    let position_matrix = glm::translate(&identity, &pos);
-
-    if object.collider.is_none() {
+pub fn draw_bbox(entity: &Mesh, bbox: &Mesh) {
+    if entity.collider.is_none() {
         return;
     }
 
-    let bb = object.collider.unwrap().get_bb();
-    let size = bb.size.to_glm();
-    let center = bb.center.to_glm();
+    let prog_id = SHADERS.activate(ShaderType::SimpleShader);
+    opengl::use_vao(bbox.gpu_bound.vao);
 
-    let bbox_model = glm::translate(&glm::identity(), &center)
+    let identity = glm::identity();
+    let model = entity.transform.to_model();
+
+    let size = bbox.bounding_box.aabb_max.to_glm();
+    let center = bbox.bounding_box.center.to_glm();
+
+    let bbox_model = glm::translate(&identity, &center)
         * glm::scale(&identity, &(size * 1.1));
 
-    let model = scale_matrix * rotation_matrix * position_matrix * bbox_model;
+    let model = model * bbox_model;
     shaders::set_matrix4(prog_id, "model", model.as_slice());
 
     // Set shader flags.
-    bbox_mesh.flags.set_flags_to_shader(prog_id);
-
-    let ebo = bbox_mesh.gpu_bound.ebo.unwrap();
+    bbox.flags.set_flags_to_shader(prog_id);
+    let ebo = bbox.gpu_bound.ebo.unwrap();
 
     unsafe {
         gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
@@ -59,7 +46,7 @@ pub fn draw_bbox(object: &LoadedMesh, bbox_mesh: &LoadedMesh) {
         gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
         gl::DrawElements(
             gl::TRIANGLES,
-            bbox_mesh.gpu_bound.primitives_len as i32,
+            bbox.gpu_bound.primitives_len as i32,
             gl::UNSIGNED_INT,
             ptr::null(),
         );
@@ -69,7 +56,10 @@ pub fn draw_bbox(object: &LoadedMesh, bbox_mesh: &LoadedMesh) {
     }
 }
 
-pub fn draw_mesh(mesh: &LoadedMesh) {
+pub fn draw_mesh(
+    mesh: &Mesh,
+    parent: Option<&Mesh>,
+) {
     if mesh.is_hidden {
         return;
     }
@@ -87,21 +77,13 @@ pub fn draw_mesh(mesh: &LoadedMesh) {
         }
     }
 
-    let (pos, rotation, scale) = mesh.transform.to_glm();
+    let mut entity_model = mesh.transform.to_model();
+    // Perform parent transform to child. 
+    if let Some(parent) = parent {
+        entity_model = parent.transform.to_model() * entity_model;
+    }
 
-    let identity = glm::identity();
-    let scale_matrix = glm::scale(&identity, &scale);
-    let rotation_matrix = {
-        let mut matrix = glm::rotate_x(&identity, rotation.x);
-        matrix = glm::rotate_y(&matrix, rotation.y);
-        matrix = glm::rotate_z(&matrix, rotation.z);
-
-        matrix
-    };
-    let position_matrix = glm::translate(&identity, &pos);
-
-    let model = scale_matrix * rotation_matrix * position_matrix;
-    shaders::set_matrix4(prog_id, "model", model.as_slice());
+    shaders::set_matrix4(prog_id, "model", entity_model.as_slice());
 
     // Set shader flags.
     mesh.flags.set_flags_to_shader(prog_id);

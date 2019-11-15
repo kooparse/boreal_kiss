@@ -1,28 +1,82 @@
-use crate::renderer::{LightProbes, LoadedMesh, Text};
+use crate::renderer::{LightProbes, Mesh, Text};
 use std::fmt::Debug;
 use std::iter::Iterator;
+use std::marker::PhantomData;
 use std::mem::*;
 
-#[derive(Debug)]
-pub struct Wall;
-#[derive(Default, Debug)]
-pub struct Player;
-#[derive(Debug)]
-pub struct Camera;
+pub trait Entity<T> {
+    fn get(&self, handle: &Handle<T>) -> &T;
+    fn get_mut(&mut self, handle: &Handle<T>) -> &mut T;
+    fn insert(&mut self, value: T) -> Handle<T>;
+    fn remove(&mut self, value: Handle<T>);
+}
 
 #[derive(Default)]
 pub struct Entities {
-    pub walls: Arena<Wall>,
     pub light_probes: Arena<LightProbes>,
     pub text_widgets: Arena<Text>,
-    pub meshes: Arena<LoadedMesh>,
-    pub player: Player,
+    pub meshes: Arena<Mesh>,
+}
+
+impl Entity<Mesh> for Entities {
+    fn get(&self, handle: &Handle<Mesh>) -> &Mesh {
+        self.meshes.get(handle)
+    }
+
+    fn get_mut(&mut self, handle: &Handle<Mesh>) -> &mut Mesh {
+        self.meshes.get_mut(handle)
+    }
+
+    fn insert(&mut self, value: Mesh) -> Handle<Mesh> {
+        self.meshes.insert(value)
+    }
+
+    fn remove(&mut self, handle: Handle<Mesh>) {
+        self.meshes.remove(handle);
+    }
+}
+
+impl Entity<Text> for Entities {
+    fn get(&self, handle: &Handle<Text>) -> &Text {
+        self.text_widgets.get(handle)
+    }
+
+    fn get_mut(&mut self, handle: &Handle<Text>) -> &mut Text {
+        self.text_widgets.get_mut(handle)
+    }
+
+    fn insert(&mut self, value: Text) -> Handle<Text> {
+        self.text_widgets.insert(value)
+    }
+
+    fn remove(&mut self, handle: Handle<Text>) {
+        self.text_widgets.remove(handle);
+    }
+}
+
+impl Entity<LightProbes> for Entities {
+    fn get(&self, handle: &Handle<LightProbes>) -> &LightProbes {
+        self.light_probes.get(handle)
+    }
+
+    fn get_mut(&mut self, handle: &Handle<LightProbes>) -> &mut LightProbes {
+        self.light_probes.get_mut(handle)
+    }
+
+    fn insert(&mut self, value: LightProbes) -> Handle<LightProbes> {
+        self.light_probes.insert(value)
+    }
+
+    fn remove(&mut self, handle: Handle<LightProbes>) {
+        self.light_probes.remove(handle);
+    }
 }
 
 /// Memory arena.
+#[derive(Debug)]
 pub struct Arena<T: Debug> {
     pub data: Vec<T>,
-    handles: Vec<MemoryHandle>,
+    handles: Vec<Handle<T>>,
     // Index of dirty handles.
     free_handles: Vec<usize>,
     version_count: usize,
@@ -54,7 +108,7 @@ impl<T: Debug> Arena<T> {
     }
     // We don't want to re-allocate when the data exceed the
     // vector capacity. We currently prefer to crash.
-    pub fn insert(&mut self, value: T) -> MemoryHandle {
+    pub fn insert(&mut self, value: T) -> Handle<T> {
         if self.data.capacity() <= self.data.len() {
             panic!("Arena too small to contains the amount of data.")
         }
@@ -64,8 +118,7 @@ impl<T: Debug> Arena<T> {
         if self.free_handles.is_empty() {
             self.data.push(value);
             // Create new handle pointed to the datum index.
-            let handle =
-                MemoryHandle::new(self.data.len() - 1, self.version_count);
+            let handle = Handle::new(self.data.len() - 1, self.version_count);
 
             self.handles.push(handle);
             // Cloned occured here.
@@ -87,7 +140,7 @@ impl<T: Debug> Arena<T> {
         }
     }
 
-    pub fn get(&self, handle: &MemoryHandle) -> &T {
+    pub fn get(&self, handle: &Handle<T>) -> &T {
         if self.is_dirty(handle) {
             panic!("This value was freed.")
         }
@@ -97,7 +150,7 @@ impl<T: Debug> Arena<T> {
             .expect("No block found for this index.")
     }
 
-    pub fn get_mut(&mut self, handle: &MemoryHandle) -> &mut T {
+    pub fn get_mut(&mut self, handle: &Handle<T>) -> &mut T {
         if self.is_dirty(handle) {
             panic!("This value was freed.")
         }
@@ -107,7 +160,7 @@ impl<T: Debug> Arena<T> {
             .expect("No block found for this index.")
     }
 
-    pub fn remove(&mut self, handle: MemoryHandle) {
+    pub fn remove(&mut self, handle: Handle<T>) {
         // Verify if handle block exists.
         let index = self
             .handles
@@ -140,24 +193,37 @@ impl<T: Debug> Arena<T> {
         self.free_handles.extend(free_indexes);
     }
 
-    fn is_dirty(&self, handle: &MemoryHandle) -> bool {
+    fn is_dirty(&self, handle: &Handle<T>) -> bool {
         self.handles
             .iter()
             .any(|h| h == handle && h.is_dirty == true)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&T, &MemoryHandle)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &Handle<T>)> {
         self.handles
             .iter()
             .filter(|h| h.is_dirty == false)
             .map(move |h| (&self.data[h.value], h))
     }
 
-    // pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-    //     self.handles
-    //         .iter_mut()
+    // pub fn iter_mut(&mut self) -> IterMut<'_, &T> {
+    //     let handles: Vec<&T> = self.handles
+    //         .iter()
     //         .filter(|h| h.is_dirty == false)
-    //         .map(|h| &mut self.data[h.value])
+    //         .map(move |h| &self.data[h.value])
+    //         .collect();
+
+    //     unsafe {
+    //         let ptr = handles.as_mut_ptr();
+    //         let end = ptr.add(handles.len());
+
+    //         IterMut {
+    //             ptr,
+    //             end,
+    //             _marker: marker::PhantomData
+    //         }
+
+    //     }
     // }
 }
 
@@ -167,24 +233,34 @@ impl<T: Debug> Default for Arena<T> {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct MemoryHandle {
+#[derive(Debug, Default)]
+pub struct Handle<T> {
     value: usize,
     version: usize,
     is_dirty: bool,
+    _phantom: PhantomData<*const T>,
 }
 
-impl MemoryHandle {
+impl<T> Copy for Handle<T> {}
+
+impl<T> Clone for Handle<T> {
+    fn clone(&self) -> Handle<T> {
+        *self
+    }
+}
+
+impl<T> Handle<T> {
     fn new(value: usize, version: usize) -> Self {
         Self {
             value,
             version,
             is_dirty: false,
+            _phantom: PhantomData,
         }
     }
 }
 
-impl PartialEq for MemoryHandle {
+impl<T> PartialEq for Handle<T> {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value && self.version == other.version
     }
@@ -209,7 +285,7 @@ mod tests {
     fn exceed_allocated_reserve() {
         // Allocate 10Mb.
         let mut arena = Arena::<bool>::size_alloc(10);
-        let mut last_handle = MemoryHandle::default();
+        let mut last_handle = Handle::default();
         // Push elements of 1 byte each.
         for _ in 0..1000_0000 {
             last_handle = arena.insert(true);
@@ -255,7 +331,7 @@ mod tests {
         let _ = arena.insert(true);
         let _ = arena.insert(true);
 
-        arena.iter().for_each(|data| {
+        arena.iter().for_each(|(data, _)| {
             assert_eq!(*data, true);
         });
 

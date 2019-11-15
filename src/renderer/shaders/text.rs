@@ -31,12 +31,13 @@ pub const FRAGMENT_SOURCE: &str = r#"
     uniform vec3 text_color;
     uniform float font_size;
 
-    float width = 0.5; 
-    float edge = 0.1 / (font_size * 2);
+    float width = 0.51; 
+    float edge = 0.045;
 
     void main() {    
         float distance = texture(texture0, TexCoords).r;
-        float alpha = smoothstep(width - edge, width + edge, distance);
+        float alpha = smoothstep(width - edge , width + edge, distance);
+
         FragColor = vec4(text_color, alpha);
     }  
 "#;

@@ -1,27 +1,34 @@
-use crate::colliders::{Collider, BoundingBox};
-use super::mesh::{Transform, UVSet, Vertex};
+use super::mesh::{UVSet, Vertex};
 use super::shaders::ShaderType;
 use super::texture::Texture;
-use super::types::{Rgb, Rgba};
+use super::types::Rgba;
 use super::SunLight;
 use super::Vector;
-use super::{DrawMode, Mesh};
+use super::{DrawMode, Mesh, Transform};
+use crate::colliders::Collider;
+use crate::entities::Handle;
 use nalgebra_glm as glm;
 
-pub fn create_cube<'n>(position: Vector) -> Mesh<'n> {
-    let name = "bbox";
+pub fn create_cube<'n>(
+    transform: Transform,
+    parent: Option<Handle<Mesh>>,
+    color: Rgba,
+) -> Mesh {
+    let x_scalar = 1.;
+    let y_scalar = 1.;
+    let z_scalar = 1.;
 
     let vertex = Vertex {
         primitives: vec![
-            Vector(-1.0, -1.0, 1.0),
-            Vector(1.0, -1.0, 1.0),
-            Vector(1.0, 1.0, 1.0),
-            Vector(-1.0, 1.0, 1.0),
+            Vector(-x_scalar, -y_scalar, z_scalar),
+            Vector(x_scalar, -y_scalar, z_scalar),
+            Vector(x_scalar, y_scalar, z_scalar),
+            Vector(-x_scalar, y_scalar, z_scalar),
             // back
-            Vector(-1.0, -1.0, -1.0),
-            Vector(1.0, -1.0, -1.0),
-            Vector(1.0, 1.0, -1.0),
-            Vector(-1.0, 1.0, -1.),
+            Vector(-x_scalar, -y_scalar, -z_scalar),
+            Vector(x_scalar, -y_scalar, -z_scalar),
+            Vector(x_scalar, y_scalar, -z_scalar),
+            Vector(-x_scalar, y_scalar, -z_scalar),
         ],
         indices: vec![
             // front
@@ -32,31 +39,24 @@ pub fn create_cube<'n>(position: Vector) -> Mesh<'n> {
             4, 5, 1, 1, 0, 4, // top
             3, 2, 6, 6, 7, 3,
         ],
+        colors: vec![color, color, color, color, color, color, color, color],
         ..Default::default()
     };
 
-    let bounding_box = BoundingBox::from_vertex(&vertex);
-
-    Mesh {
-        name,
+    Mesh::new(
         vertex,
-        collider: Some(Collider::Sphere(bounding_box)),
-        transform: Transform::from_pos(position),
-        textures: vec![],
-        shader_type: ShaderType::SimpleShader,
-        mode: DrawMode::Triangles,
-    }
+        vec![],
+        transform,
+        parent,
+        Some(Collider::Cube),
+        DrawMode::Triangles,
+        ShaderType::SimpleShader,
+    )
 }
 
 /// Create a renderable triangle object, ready
 /// to be consumed by our renderer.
-pub fn create_plane<'t, 'n>(
-    name: &'n str,
-    texture_path: &'t str,
-    position: Vector,
-    scale: f32,
-) -> Mesh<'n> {
-    let shader_type = ShaderType::SimpleShader;
+pub fn create_plane<'t>(texture_path: &'t str, transform: Transform) -> Mesh {
     let mut textures = vec![];
     let mut uv_coords = vec![];
 
@@ -75,53 +75,51 @@ pub fn create_plane<'t, 'n>(
 
     let vertex = Vertex {
         primitives: vec![
-            Vector(-scale, 0., -scale),
-            Vector(-scale, 0., scale),
-            Vector(scale, 0., scale),
-            Vector(scale, 0., -scale),
+            Vector(-1., 0., -1.),
+            Vector(-1., 0., 1.),
+            Vector(1., 0., 1.),
+            Vector(1., 0., -1.),
         ],
         uv_coords,
         indices: vec![0, 1, 2, 0, 2, 3],
         ..Default::default()
     };
 
-    let bounding_box = BoundingBox::from_vertex(&vertex);
-
-    Mesh {
-        name,
+    Mesh::new(
         vertex,
-        collider: Some(Collider::Plane(bounding_box)),
-        transform: Transform::from_pos(position),
         textures,
-        shader_type,
-        mode: DrawMode::Triangles,
-    }
+        transform,
+        None,
+        Some(Collider::Cube),
+        DrawMode::Triangles,
+        ShaderType::SimpleShader,
+    )
 }
 
-pub fn create_line<'n>(
-    name: &'n str,
-    origin: Vector,
-    dir_vector: Vector,
-    color: Rgb,
-) -> Mesh<'n> {
-    let color = Rgba::from(&color);
+// pub fn create_line<'n>(
+//     name: &'n str,
+//     origin: Vector,
+//     dir_vector: Vector,
+//     color: Rgb,
+// ) -> Mesh {
+//     let color = Rgba::from(&color);
 
-    let vertex = Vertex {
-        primitives: vec![origin, dir_vector],
-        colors: vec![color, color],
-        ..Default::default()
-    };
+//     let vertex = Vertex {
+//         primitives: vec![origin, dir_vector],
+//         colors: vec![color, color],
+//         ..Default::default()
+//     };
 
-    Mesh {
-        name,
-        vertex,
-        collider: None,
-        transform: Transform::default(),
-        textures: vec![],
-        shader_type: ShaderType::SimpleShader,
-        mode: DrawMode::Lines,
-    }
-}
+//     Mesh::new(
+//         vertex,
+//         vec![],
+//         transform,
+//         None,
+//         None,
+//         DrawMode::Lines,
+//         ShaderType::SimpleShader,
+//     )
+// }
 
 pub fn add_light() -> SunLight {
     SunLight::new(
@@ -131,7 +129,7 @@ pub fn add_light() -> SunLight {
     )
 }
 
-pub fn create_grid<'n>(name: &'n str, position: Vector, dim: i32) -> Mesh<'n> {
+pub fn create_grid(transform: Transform, dim: i32) -> Mesh {
     let scale = 5f32;
     let mut list: Vec<Vector> = vec![];
     let mut colors: Vec<Rgba> = vec![];
@@ -165,13 +163,13 @@ pub fn create_grid<'n>(name: &'n str, position: Vector, dim: i32) -> Mesh<'n> {
         ..Default::default()
     };
 
-    Mesh {
-        name,
+    Mesh::new(
         vertex,
-        collider: None,
-        transform: Transform::from_pos(position),
-        textures: vec![],
-        shader_type: ShaderType::SimpleShader,
-        mode: DrawMode::Lines,
-    }
+        vec![],
+        transform,
+        None,
+        None,
+        DrawMode::Lines,
+        ShaderType::SimpleShader,
+    )
 }

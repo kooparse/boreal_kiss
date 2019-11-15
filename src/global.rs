@@ -17,7 +17,6 @@ lazy_static! {
         Mutex::new(glm::ortho(0., SCREEN_WIDTH, 0., SCREEN_HEIGHT, -1., 1.))
     };
     pub static ref VIEW_MATRIX: Mutex<glm::Mat4> = Mutex::new(glm::identity());
-
 }
 
 pub static mut SCREEN_WIDTH: f32 = 1200.;

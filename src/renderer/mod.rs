@@ -10,13 +10,13 @@ mod texture;
 mod types;
 
 // Internal...
-use crate::entities::Entities;
+use crate::entities::{Entities, Entity};
 use crate::global::*;
 use draw::*;
 use font::Font;
 // Pub
 pub use light::{LightProbes, SunLight};
-pub use mesh::{LoadedMesh, Mesh, Transform, Vertex};
+pub use mesh::{Mesh, Transform, Vertex};
 pub use opengl::GpuBound;
 pub use shaders::ShaderManager;
 pub use text::Text;
@@ -30,7 +30,6 @@ pub struct DebugInfo {
 }
 
 pub struct Renderer {
-    bbox_mesh: LoadedMesh,
     back_buffer_color: Rgba,
     font: Font,
     pub debug_info: DebugInfo,
@@ -55,18 +54,20 @@ impl Renderer {
             "assets/fonts/Helvetica/helvetica.png",
         );
 
-        let bbox_mesh =
-            LoadedMesh::from(&primitives::create_cube(Vector::default()));
-
         Self {
-            bbox_mesh,
             back_buffer_color,
             debug_info: DebugInfo::default(),
             font,
         }
     }
 
-    pub fn draw(&mut self, entities: &Entities) {
+    pub fn draw(&mut self, entities: &mut Entities) {
+        let bbox_mesh = primitives::create_cube(
+            Transform::default(),
+            None,
+            Rgba::default(),
+        );
+
         // Updates UBOs...
         SHADERS.update_all_ubo();
 
@@ -77,11 +78,13 @@ impl Renderer {
         for (mesh, _) in entities.meshes.iter() {
             self.debug_info.draw_call += 1;
 
+            let parent = mesh.parent.as_ref().map(|p| entities.get(&p));
+
             if mesh.is_selected {
-                draw_bbox(mesh, &self.bbox_mesh);
+                draw_bbox(mesh, &bbox_mesh);
             }
 
-            draw_mesh(mesh);
+            draw_mesh(mesh, parent);
         }
 
         // Render all our light probes into the scene.
@@ -97,6 +100,8 @@ impl Renderer {
             self.debug_info.draw_call += 1;
             draw_text(&mut self.font, text);
         }
+
+        // bbox goes out of scope so drop so gl cleanup functions are called.
     }
 
     pub fn clear_screen(&self) {

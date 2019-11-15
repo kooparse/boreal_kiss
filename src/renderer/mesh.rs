@@ -4,8 +4,9 @@ use super::texture::Texture;
 use super::DrawMode;
 use super::GpuBound;
 use super::Vector;
+use crate::colliders::{BoundingBox, Collider};
+use crate::entities::Handle;
 use std::cmp::min;
-use crate::colliders::{Collider, BoundingBox};
 
 use super::types::Rgba;
 use gltf;
@@ -44,6 +45,24 @@ impl Transform {
             self.scale.to_glm(),
         )
     }
+
+    pub fn to_model(&self) -> glm::Mat4 {
+        let (pos, rotation, scale) = self.to_glm();
+        let identity = glm::identity();
+
+        let scale_matrix = glm::scale(&identity, &scale);
+        let translate_matrix = glm::translate(&identity, &pos);
+
+        let rotation_matrix = {
+            let rot_x_matrix = glm::rotate_x(&identity, rotation.x);
+            let rot_y_matrix = glm::rotate_y(&identity, rotation.y);
+            let rot_z_matrix = glm::rotate_z(&identity, rotation.z);
+
+            rot_x_matrix * rot_y_matrix * rot_z_matrix
+        };
+
+        translate_matrix * rotation_matrix * scale_matrix
+    }
 }
 
 impl Default for Transform {
@@ -78,32 +97,114 @@ pub struct Vertex {
 }
 
 #[derive(Debug)]
-pub struct LoadedMesh {
+pub struct Mesh {
     // Debug from editor...
     pub is_hover: bool,
     pub is_selected: bool,
     pub is_dragged: bool,
-
     pub is_hidden: bool,
-    pub transform: Transform,
-    pub mode: DrawMode,
-    pub collider: Option<Collider>,
+
     pub(crate) gpu_bound: GpuBound,
     pub flags: ShaderFlags,
-}
 
-pub struct Mesh<'n> {
-    pub name: &'n str,
+    pub transform: Transform,
+    pub parent: Option<Handle<Mesh>>,
+
+    pub bounding_box: BoundingBox,
+
     pub vertex: Vertex,
     pub textures: Vec<Texture>,
     pub shader_type: ShaderType,
-    pub transform: Transform,
     pub mode: DrawMode,
     pub collider: Option<Collider>,
 }
 
-impl<'n> Mesh<'n> {
-    pub fn from_gltf(path: &'n str, position: Vector, scale: f32) -> Mesh<'n> {
+// impl Entity for Mesh {
+//     fn get(&self, entities: &Entities, handle: &Handle<Self>) -> &Self {
+//         entities.meshes.get()
+//     }
+//     fn get_mut(&mut self, entities: &mut Entities) -> &mut Self {}
+//     fn insert(&mut self, entities: &mut Entities) -> Handle<Self> {}
+// }
+
+impl Mesh {
+    pub fn new(
+        vertex: Vertex,
+        textures: Vec<Texture>,
+        transform: Transform,
+        parent: Option<Handle<Mesh>>,
+        collider: Option<Collider>,
+        mode: DrawMode,
+        shader_type: ShaderType,
+    ) -> Self {
+        let (gpu_bound, flags) = Self::load_gl(&vertex, &textures, shader_type);
+        let bounding_box = BoundingBox::from_vertex(&vertex);
+
+        Self {
+            bounding_box,
+            collider,
+            vertex,
+            textures,
+            parent,
+            shader_type,
+            mode,
+            transform,
+
+            gpu_bound,
+            flags,
+
+            is_hover: false,
+            is_selected: false,
+            is_dragged: false,
+            is_hidden: false,
+        }
+    }
+
+    pub fn load_gl(
+        vertex: &Vertex,
+        textures: &Vec<Texture>,
+        shader_type: ShaderType,
+    ) -> (GpuBound, ShaderFlags) {
+        // From system memmory to gpu memory.
+        let (vao, vbo, ebo, tex_ids) =
+            opengl::load_object_to_gpu(vertex, textures);
+
+        let primitives_len =
+            ebo.map_or(vertex.primitives.len(), |_| vertex.indices.len());
+
+        let gpu_bound = GpuBound {
+            vao,
+            vbo,
+            ebo,
+            primitives_len,
+            shader: shader_type,
+            tex_ids,
+        };
+
+        let (has_uv, has_multi_uv, has_vert_colors, _tex_number) = {
+            let colors = &vertex.colors;
+            // We want a correlation between the number of set of coords
+            // and the number of texture loaded.
+            let tex_number = min(vertex.uv_coords.len(), textures.len());
+
+            (
+                tex_number > 0,
+                tex_number > 1,
+                !colors.is_empty(),
+                tex_number,
+            )
+        };
+
+        let flags = ShaderFlags {
+            has_uv,
+            has_multi_uv,
+            has_vert_colors,
+        };
+
+        (gpu_bound, flags)
+    }
+
+    pub fn from_gltf(path: &str, transform: Transform) -> Vec<Mesh> {
         let (model, buffers, images) = gltf::import(path).unwrap();
         let mut vertices: Vec<Vertex> = vec![];
 
@@ -160,75 +261,24 @@ impl<'n> Mesh<'n> {
             .map(|img| Texture::new((img.width, img.height), img.pixels))
             .collect::<_>();
 
-
         // TODO: Careful here...
-        let bounding_box = BoundingBox::from_vertex(&vertices[0]);
+        // let bounding_box =
+        //     BoundingBox::from_vertex(&vertices[0], &transform.scale);
 
-        Mesh {
-            name: path,
-            collider: Some(Collider::Sphere(bounding_box)),
-            vertex: vertices.remove(0),
-            textures,
-            shader_type: ShaderType::SimpleShader,
-            mode: DrawMode::Triangles,
-            transform: Transform::new(
-                position,
-                Vector::default(),
-                Vector(scale, scale, scale),
-            ),
-        }
-    }
-}
-
-impl<'n> From<&Mesh<'n>> for LoadedMesh {
-    fn from(object: &Mesh<'n>) -> LoadedMesh {
-        // From system memmory to gpu memory.
-        let (vao, vbo, ebo, tex_ids) = opengl::load_object_to_gpu(&object);
-
-        let primitives_len = ebo.map_or(object.vertex.primitives.len(), |_| {
-            object.vertex.indices.len()
-        });
-
-        let gpu_bound = GpuBound {
-            vao,
-            vbo,
-            ebo,
-            primitives_len,
-            shader: object.shader_type,
-            tex_ids,
-        };
-
-        let (has_uv, has_multi_uv, has_vert_colors, _tex_number) = {
-            let colors = &object.vertex.colors;
-            // We want a correlation between the number of set of coords
-            // and the number of texture loaded.
-            let tex_number =
-                min(object.vertex.uv_coords.len(), object.textures.len());
-
-            (
-                tex_number > 0,
-                tex_number > 1,
-                !colors.is_empty(),
-                tex_number,
-            )
-        };
-
-        let flags = ShaderFlags {
-            has_uv,
-            has_multi_uv,
-            has_vert_colors,
-        };
-
-        LoadedMesh {
-            is_hidden: false,
-            is_hover: false,
-            is_dragged: false,
-            is_selected: false,
-            mode: object.mode,
-            transform: object.transform,
-            collider: object.collider,
-            gpu_bound,
-            flags,
-        }
+        vertices
+            .into_iter()
+            .map(|v| {
+                Mesh::new(
+                    v,
+                    textures.clone(),
+                    transform,
+                    None,
+                    // collider
+                    None,
+                    DrawMode::Triangles,
+                    ShaderType::SimpleShader,
+                )
+            })
+            .collect()
     }
 }

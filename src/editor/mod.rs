@@ -1,11 +1,11 @@
 mod debug_camera;
 
 use crate::colliders::*;
-use crate::entities::{Entities, MemoryHandle};
+use crate::entities::{Entities, Entity, Handle};
 use crate::global::*;
 use crate::input::{Input, Key, MouseButton};
 use crate::platform::WinitPlatform;
-use crate::renderer::{LoadedMesh, Renderer, Text, Vector};
+use crate::renderer::{Mesh, Renderer, Text, Vector};
 use crate::time::{Time, Timer};
 use debug_camera::Camera;
 use nalgebra_glm as glm;
@@ -21,11 +21,16 @@ pub struct Editor {
     pub camera: Camera,
     timer: Timer,
     object_mode: ObjectTransformMode,
-    selected_handle: Option<MemoryHandle>,
+    selected_handle: Option<Handle<Mesh>>,
 }
 
 impl Editor {
     pub fn new() -> Self {
+
+        let t = glm::vec3(2., 2., 2.);
+        dbg!(t.normalize());
+
+
         Self {
             timer: Timer::new(0.5),
             camera: Camera::default(),
@@ -66,7 +71,7 @@ impl Editor {
             let (x, y) = unsafe { (0.01 * SCREEN_WIDTH, SCREEN_HEIGHT) };
 
             let content = format!("Frame: {} ms", (time.dt * 1000.).round());
-            entities.text_widgets.insert(Text {
+            entities.insert(Text {
                 position: Vector(x, y * 0.9, 0.),
                 font_size: 31.,
                 content,
@@ -75,14 +80,14 @@ impl Editor {
 
             let content =
                 format!("Meshes rendered: {}", renderer.debug_info.draw_call);
-            entities.text_widgets.insert(Text {
+            entities.insert(Text {
                 position: Vector(x, y * 0.86, 0.),
                 font_size: 31.,
                 content,
                 ..Text::default()
             });
 
-            entities.text_widgets.insert(Text {
+            entities.insert(Text {
                 position: Vector(x, y * 0.82, 0.),
                 font_size: 31.,
                 content: format!("Mode: {:?}", self.object_mode),
@@ -119,35 +124,37 @@ impl Editor {
             let ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1., 0.);
             let ray_world = (glm::inverse(&view_matrix) * ray_eye).xyz();
 
-            // Deplace a bit the origin, elsewise we have
+            // Deplace a bit the origin, otherwise we have
             // to move before seeing the ray.
             let origin = cam_pos;
             let direction = glm::normalize(&ray_world);
 
             // All meshes
-            let entity_handles: Vec<MemoryHandle> =
-                entities.meshes.iter().map(|(_, h)| h.clone()).collect();
+            let entity_handles: Vec<Handle<Mesh>> =
+                entities.meshes.iter().map(|(_, h)| *h).collect();
 
-            let mut hit_array: Vec<(MemoryHandle, f32)> = vec![];
+            let mut hit_array: Vec<(Handle<Mesh>, f32)> = vec![];
 
             let mouse_is_hold = input.is_clicked(MouseButton::Left);
             let mouse_is_down = input.is_clicked_once(MouseButton::Left);
 
             for handle in entity_handles {
-                let entity = entities.meshes.get_mut(&handle);
+                let entity = entities.get_mut(&handle);
                 let is_current =
                     self.selected_handle.map_or(false, |sh| sh == handle);
 
                 let (is_hit, t) =
                     entity.collider.map_or((false, 0.), |collider| {
                         match &collider {
-                            Collider::Plane(_) => {
+                            Collider::Plane => {
                                 plane_hit((origin, direction), entity)
                             }
-                            Collider::Sphere(_) => {
+                            Collider::Sphere => {
                                 sphere_hit((origin, direction), entity)
                             }
-                            _ => (false, 0.),
+                            Collider::Cube => {
+                                intersect_ray_cube((origin, direction), entity)
+                            }
                         }
                     });
 
@@ -159,7 +166,7 @@ impl Editor {
                 }
 
                 if is_hit && mouse_is_hold {
-                    hit_array.push((handle.clone(), t));
+                    hit_array.push((handle, t));
                 } else {
                     entity.is_selected = false;
                 }
@@ -176,13 +183,13 @@ impl Editor {
             if let Some(handle) = self.selected_handle {
                 self.selected_handle = Some(handle);
 
-                let object = entities.meshes.get_mut(&handle);
-                object.is_selected = true;
+                let entity = entities.get_mut(&handle);
+                entity.is_selected = true;
 
                 if mouse_is_hold && input.cursor.has_moved {
-                    object.is_dragged = true;
+                    entity.is_dragged = true;
                 } else {
-                    object.is_dragged = false;
+                    entity.is_dragged = false;
                     return;
                 }
 
@@ -192,7 +199,7 @@ impl Editor {
 
                 match self.object_mode {
                     ObjectTransformMode::Position => {
-                        let pos_ptr = &mut object.transform.position;
+                        let pos_ptr = &mut entity.transform.position;
 
                         if input.modifiers.shift {
                             pos_ptr.1 -= delta_y;
@@ -203,7 +210,7 @@ impl Editor {
                         pos_ptr.2 += delta_y;
                     }
                     ObjectTransformMode::Rotation => {
-                        let rotation_ptr = &mut object.transform.rotation;
+                        let rotation_ptr = &mut entity.transform.rotation;
                         if input.modifiers.shift {
                             rotation_ptr.0 += delta_y;
                             return;
@@ -211,7 +218,7 @@ impl Editor {
                         rotation_ptr.2 += delta_x;
                     }
                     ObjectTransformMode::Scale => {
-                        let scale_ptr = &mut object.transform.scale;
+                        let scale_ptr = &mut entity.transform.scale;
                         scale_ptr.0 += delta_x;
                         scale_ptr.1 += delta_x;
                         scale_ptr.2 += delta_x;

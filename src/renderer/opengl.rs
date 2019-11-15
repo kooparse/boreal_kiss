@@ -1,8 +1,7 @@
-use super::types::Rgba;
-use super::mesh::UV;
+use super::mesh::{Vertex, UV};
 use super::shaders::{ShaderProgramId, ShaderType};
 use super::texture::Texture;
-use super::Mesh;
+use super::types::Rgba;
 use super::Vector;
 use gl;
 use std::{ffi::c_void, mem, ptr, str};
@@ -160,14 +159,13 @@ pub fn use_vao(vao: VAO) {
 }
 
 /// This create an vertex buffer object and load data.
-pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
-    let with_ebo = !object.vertex.indices.is_empty();
+pub fn load_bytes_to_gpu(vao: VAO, vertex: &Vertex) -> (VBO, Option<EBO>) {
+    let with_ebo = !vertex.indices.is_empty();
 
-    let mut total_size = (object.vertex.primitives.len()
-        * mem::size_of::<Vector>())
-        + (object.vertex.colors.len() * mem::size_of::<Rgba>());
+    let mut total_size = (vertex.primitives.len() * mem::size_of::<Vector>())
+        + (vertex.colors.len() * mem::size_of::<Rgba>());
 
-    object.vertex.uv_coords.iter().for_each(|set| {
+    vertex.uv_coords.iter().for_each(|set| {
         total_size += set.coords.len() * mem::size_of::<UV>();
     });
 
@@ -191,25 +189,23 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
             data_cursor,
-            (object.vertex.primitives.len() * mem::size_of::<Vector>())
-                as isize,
-            object.vertex.primitives.as_ptr() as *const _,
+            (vertex.primitives.len() * mem::size_of::<Vector>()) as isize,
+            vertex.primitives.as_ptr() as *const _,
         );
-        data_cursor += (object.vertex.primitives.len()
-            * mem::size_of::<Vector>()) as isize;
+        data_cursor +=
+            (vertex.primitives.len() * mem::size_of::<Vector>()) as isize;
 
         gl::BufferSubData(
             gl::ARRAY_BUFFER,
             data_cursor,
-            (object.vertex.colors.len() * mem::size_of::<Rgba>()) as isize,
-            object.vertex.colors.as_ptr() as *const _,
+            (vertex.colors.len() * mem::size_of::<Rgba>()) as isize,
+            vertex.colors.as_ptr() as *const _,
         );
 
-        data_cursor +=
-            (object.vertex.colors.len() * mem::size_of::<Rgba>()) as isize;
+        data_cursor += (vertex.colors.len() * mem::size_of::<Rgba>()) as isize;
 
         // Texture data.
-        object.vertex.uv_coords.iter().for_each(|set| {
+        vertex.uv_coords.iter().for_each(|set| {
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
                 data_cursor,
@@ -221,7 +217,7 @@ pub fn load_bytes_to_gpu(vao: VAO, object: &Mesh) -> (VBO, Option<EBO>) {
 
         // Create EBO if indices is not empty.
         if let Some(ebo) = ebo {
-            let indices = &object.vertex.indices;
+            let indices = &vertex.indices;
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
@@ -339,14 +335,14 @@ pub fn load_font_to_gpu(
 
 /// Use a given vao then load data to the gpu.
 pub fn load_object_to_gpu(
-    object: &Mesh,
+    vertex: &Vertex,
+    textures: &Vec<Texture>,
 ) -> (VAO, VBO, Option<EBO>, Vec<TexId>) {
     unsafe {
         let vao = gen_vao();
-        let (vbo, ebo) = load_bytes_to_gpu(vao, &object);
+        let (vbo, ebo) = load_bytes_to_gpu(vao, vertex);
 
-        let tex_ids = object
-            .textures
+        let tex_ids = textures
             .iter()
             .map(|tex| load_tex_to_gpu(vao, &tex, false))
             .collect();
@@ -368,8 +364,7 @@ pub fn load_object_to_gpu(
         gl::EnableVertexAttribArray(0);
 
         location += 1;
-        data_cursor +=
-            object.vertex.primitives.len() * mem::size_of::<Vector>();
+        data_cursor += vertex.primitives.len() * mem::size_of::<Vector>();
 
         // Colors
         gl::VertexAttribPointer(
@@ -383,10 +378,10 @@ pub fn load_object_to_gpu(
         gl::EnableVertexAttribArray(1);
 
         location += 1;
-        data_cursor += object.vertex.colors.len() * mem::size_of::<Rgba>();
+        data_cursor += vertex.colors.len() * mem::size_of::<Rgba>();
 
         // UV Coords.
-        for set in object.vertex.uv_coords.iter() {
+        for set in vertex.uv_coords.iter() {
             gl::VertexAttribPointer(
                 location,
                 2,
