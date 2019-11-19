@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 use std::cmp::PartialEq;
 use std::ops::Mul;
 
@@ -94,10 +96,10 @@ impl MatrixFunctions for Mat4 {
     fn rotate_x(&mut self, angle: f32) {
         unimplemented!()
     }
-    fn rotate_y(&mut self, trans: &Vec3) {
+    fn rotate_y(&mut self, angle: f32) {
         unimplemented!()
     }
-    fn rotate_z(&mut self, trans: &Vec3) {
+    fn rotate_z(&mut self, angle: f32) {
         unimplemented!()
     }
 }
@@ -401,21 +403,21 @@ pub fn translate(a: &Mat4, s: &Vec3) -> Mat4 {
     mat4
 }
 
-pub fn rotate_x(a: &Mat4, s: &Vec3) -> Mat4 {
+pub fn rotate_x(a: &Mat4, angle: f32) -> Mat4 {
     let mut mat4 = Mat4::new(a.data);
-    mat4.rotate_x(s);
+    mat4.rotate_x(angle);
     mat4
 }
 
-pub fn rotate_y(a: &Mat4, s: &Vec3) -> Mat4 {
+pub fn rotate_y(a: &Mat4, angle: f32) -> Mat4 {
     let mut mat4 = Mat4::new(a.data);
-    mat4.rotate_y(s);
+    mat4.rotate_y(angle);
     mat4
 }
 
-pub fn rotate_z(a: &Mat4, s: &Vec3) -> Mat4 {
+pub fn rotate_z(a: &Mat4, angle: f32) -> Mat4 {
     let mut mat4 = Mat4::new(a.data);
-    mat4.rotate_y(s);
+    mat4.rotate_y(angle);
     mat4
 }
 
