@@ -1,9 +1,18 @@
 use crate::input::{Input, Key};
 use crate::map::Map;
 
-#[derive(Default)]
 pub struct Player {
+    capacity: usize,
     pub map_pos: (usize, usize),
+}
+
+impl Default for Player {
+    fn default() -> Self {
+        Self {
+            capacity: 1,
+            map_pos: (0, 0),
+        }
+    }
 }
 
 impl Player {
@@ -36,6 +45,10 @@ impl Player {
             (self.map_pos.0 + move_delta.0, self.map_pos.1 + move_delta.1);
 
         if self.can_move(map, self.map_pos, move_delta) {
+            if map.grid[projection.0][projection.1] == 4 {
+                self.capacity += 1;
+            }
+
             // Move player if next position is free.
             map.grid[self.map_pos.0][self.map_pos.1] = 0;
             self.map_pos = projection;
@@ -85,7 +98,7 @@ impl Player {
 
         let value = map.grid[projection.0][projection.1];
 
-        if value == 1 {
+        if value == 1 && pushable_position.len() <= self.capacity - 1 {
             pushable_position.push(projection);
             return self.is_wall_pushable(
                 &mut map,
@@ -115,6 +128,7 @@ impl Player {
             return false;
         };
 
-        return map.grid[projection.0][projection.1] == 0;
+        return map.grid[projection.0][projection.1] == 0
+            || map.grid[projection.0][projection.1] == 4;
     }
 }
