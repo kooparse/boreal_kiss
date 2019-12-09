@@ -19,8 +19,8 @@ lazy_static! {
     pub static ref VIEW_MATRIX: Mutex<glm::Mat4> = Mutex::new(glm::identity());
 }
 
-pub static mut SCREEN_WIDTH: f32 = 1200.;
-pub static mut SCREEN_HEIGHT: f32 = 800.;
+pub static mut SCREEN_WIDTH: f32 = 1600.;
+pub static mut SCREEN_HEIGHT: f32 = 1000.;
 pub static mut SCREEN_DPI: u32 = 2;
 pub static WITH_VSYNC: bool = false;
 pub static MULTISAMPLING: u16 = 8;

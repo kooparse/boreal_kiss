@@ -5,10 +5,12 @@ mod entities;
 mod game_loop;
 mod global;
 mod input;
+mod map;
+mod math;
 mod platform;
+mod player;
 mod renderer;
 mod time;
-mod math;
 
 use editor::Editor;
 use entities::{Entities, Entity};
@@ -45,14 +47,17 @@ fn main() {
         entities.insert(mesh);
     }
 
+    let mut map = map::Map::default();
+
     game_loop.start(|time| {
         platform.map_winit_inputs(&mut input);
 
         // Editor stuff here. With menu etc...
         editor.run(&mut entities, &platform, &mut input, &mut renderer, time);
+        entities.player.move_on_grid(&mut input, &mut map);
 
         renderer.clear_screen();
-        renderer.draw(&mut entities);
+        renderer.draw(&mut entities, &map);
 
         // Actually "draw": swap the back buffer into the front buffer.
         platform.swap_buffers();

@@ -96,6 +96,30 @@ pub fn create_plane<'t>(texture_path: &'t str, transform: Transform) -> Mesh {
     )
 }
 
+pub fn create_tiles(transform: Transform, color: Rgba) -> Mesh {
+    let vertex = Vertex {
+        primitives: vec![
+            Vector(-1., 0., -1.),
+            Vector(-1., 0., 1.),
+            Vector(1., 0., 1.),
+            Vector(1., 0., -1.),
+        ],
+        colors: vec![color, color, color, color],
+        indices: vec![0, 1, 2, 0, 2, 3],
+        ..Default::default()
+    };
+
+    Mesh::new(
+        vertex,
+        vec![],
+        transform,
+        None,
+        Some(Collider::Cube),
+        DrawMode::Triangles,
+        ShaderType::SimpleShader,
+    )
+}
+
 // pub fn create_line<'n>(
 //     name: &'n str,
 //     origin: Vector,
@@ -130,7 +154,7 @@ pub fn add_light() -> SunLight {
 }
 
 pub fn create_grid(transform: Transform, dim: i32) -> Mesh {
-    let scale = 5f32;
+    let scale = 20f32;
     let mut list: Vec<Vector> = vec![];
     let mut colors: Vec<Rgba> = vec![];
     let ratio = (dim / 2) as f32;

@@ -1,4 +1,4 @@
-use crate::renderer::{Mesh, Transform, Vector, Vertex};
+use crate::renderer::{Mesh, Vector, Vertex};
 use nalgebra_glm as glm;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -10,8 +10,8 @@ pub enum Collider {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BoundingBox {
-    pub aabb_min: Vector,
-    pub aabb_max: Vector,
+    pub min: Vector,
+    pub max: Vector,
     pub center: Vector,
 }
 
@@ -45,24 +45,31 @@ impl BoundingBox {
             };
         }
 
+        let max = Vector(max_x, max_y, max_z);
+        let min = Vector(min_x, min_y, min_z);
         let center = Vector(
             (min_x + max_x) / 2.,
             (min_y + max_y) / 2.,
             (min_z + max_z) / 2.,
         );
 
-        let aabb_max = Vector(max_x, max_y, max_z);
-        let aabb_min = Vector(min_x, min_y, min_z);
-
-        Self {
-            center,
-            aabb_min,
-            aabb_max,
-        }
+        Self { center, min, max }
     }
 }
 
-pub fn intersect_ray_cube(
+pub fn ray_intersect_aabb(ray: (glm::Vec3, glm::Vec3), entity: &Mesh) {
+    let (origin, distance) = ray;
+    let bv_model = entity.transform.to_model();
+
+    let mut t_min = 0.;
+    // Set the max distance ray can travel.
+    let mut t_max = 100000.;
+
+    // Iterate over a range of 3, for 3 axis (x, y, z).
+    for i in 0..3 {}
+}
+
+pub fn intersect_ray_box(
     ray: (glm::Vec3, glm::Vec3),
     entity: &Mesh,
 ) -> (bool, f32) {
@@ -83,22 +90,14 @@ pub fn intersect_ray_cube(
     let scale = entity.transform.scale.to_glm();
 
     let (aabb_max, aabb_min) = {
-        let (aabb_max, aabb_min) = (
-            entity.bounding_box.aabb_max.to_glm(),
-            entity.bounding_box.aabb_min.to_glm(),
+        let (max, min) = (
+            entity.bounding_box.max.to_glm(),
+            entity.bounding_box.min.to_glm(),
         );
 
         (
-            glm::vec3(
-                aabb_max.x * scale.x,
-                aabb_max.y * scale.y,
-                aabb_max.z * scale.z,
-            ),
-            glm::vec3(
-                aabb_min.x * scale.x,
-                aabb_min.y * scale.y,
-                aabb_min.z * scale.z,
-            ),
+            glm::vec3(max.x * scale.x, max.y * scale.y, max.z * scale.z),
+            glm::vec3(min.x * scale.x, min.y * scale.y, min.z * scale.z),
         )
     };
 
@@ -207,7 +206,7 @@ pub fn intersect_ray_cube(
 
 pub fn sphere_hit(ray: (glm::Vec3, glm::Vec3), entity: &Mesh) -> (bool, f32) {
     let bb = entity.bounding_box;
-    let r = bb.aabb_max.0 - bb.center.0;
+    let r = bb.max.0 - bb.center.0;
 
     let (origin, direction) = ray;
     let mesh_pos = entity.transform.position.to_glm();
@@ -267,7 +266,7 @@ pub fn plane_hit(ray: (glm::Vec3, glm::Vec3), entity: &Mesh) -> (bool, f32) {
             // We check if the point on the plane is
             // in our finite bound.
             // This is the radius of the circle.
-            let radius = bb.aabb_max.0 - bb.center.0;
+            let radius = bb.max.0 - bb.center.0;
             // p is our point in the plane.
             let p = origin + direction * t;
             // This is the vector between the intersection of our ray

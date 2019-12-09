@@ -1,4 +1,5 @@
 use crate::renderer::{LightProbes, Mesh, Text};
+use crate::player::Player;
 use std::fmt::Debug;
 use std::iter::Iterator;
 use std::marker::PhantomData;
@@ -16,6 +17,7 @@ pub struct Entities {
     pub light_probes: Arena<LightProbes>,
     pub text_widgets: Arena<Text>,
     pub meshes: Arena<Mesh>,
+    pub player: Player,
 }
 
 impl Entity<Mesh> for Entities {

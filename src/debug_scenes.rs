@@ -6,8 +6,8 @@ pub fn scene_mesh(entities: &mut Entities) -> Vec<Mesh> {
 
     let parent = Transform::from_pos(position);
 
-    let lenght = 0.5;
-    let weight = 0.5;
+    let lenght = 1.;
+    let weight = 1.;
 
     let mut transform = Transform::from_pos(position);
     transform.scale = Vector(lenght, weight, weight);
@@ -33,7 +33,7 @@ pub fn scene_mesh(entities: &mut Entities) -> Vec<Mesh> {
     vec![
         primitives::create_grid(Transform::default(), 20),
         // axis_x,
-        axis_y,
+        // axis_y,
         // axis_z,
         // primitives::create_plane(
         //     "assets/textures/pos_debug.png",

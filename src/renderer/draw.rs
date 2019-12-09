@@ -27,7 +27,7 @@ pub fn draw_bbox(entity: &Mesh, bbox: &Mesh) {
     let identity = glm::identity();
     let model = entity.transform.to_model();
 
-    let size = bbox.bounding_box.aabb_max.to_glm();
+    let size = bbox.bounding_box.max.to_glm();
     let center = bbox.bounding_box.center.to_glm();
 
     let bbox_model = glm::translate(&identity, &center)

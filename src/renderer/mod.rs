@@ -12,6 +12,7 @@ mod types;
 // Internal...
 use crate::entities::{Entities, Entity};
 use crate::global::*;
+use crate::map::Map;
 use draw::*;
 use font::Font;
 // Pub
@@ -61,7 +62,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, entities: &mut Entities) {
+    pub fn draw(&mut self, entities: &mut Entities, map: &Map) {
         let bbox_mesh = primitives::create_cube(
             Transform::default(),
             None,
@@ -73,6 +74,42 @@ impl Renderer {
 
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
+
+        for i in 0..10 {
+            for j in 0..10 {
+                let value = map.grid[i][j];
+
+                let x = i as f32 * 2.;
+                let z = j as f32 * 2.;
+                let mut position = Transform::from_pos(Vector(x, 0., z));
+
+                if value == 0 {
+                    let color = Rgba::new(0., 1., 1., 1.);
+                    draw_mesh(&primitives::create_tiles(position, color), None);
+                } else if value == 1 {
+                    let color = Rgba::new(0., 1., 0., 1.);
+                    position.position.1 = 1.;
+                    draw_mesh(
+                        &primitives::create_cube(position, None, color),
+                        None,
+                    );
+                } else if value == 2 {
+                    let color = Rgba::new(1., 1., 0., 1.);
+                    position.position.1 = 1.;
+                    draw_mesh(
+                        &primitives::create_cube(position, None, color),
+                        None,
+                    );
+                } else if value == 3 {
+                    let color = Rgba::new(1., 0., 0., 1.);
+                    position.position.1 = 1.;
+                    draw_mesh(
+                        &primitives::create_cube(position, None, color),
+                        None,
+                    );
+                }
+            }
+        }
 
         // Render all our meshes to the screen.
         for (mesh, _) in entities.meshes.iter() {

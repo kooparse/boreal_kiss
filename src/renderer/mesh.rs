@@ -119,14 +119,6 @@ pub struct Mesh {
     pub collider: Option<Collider>,
 }
 
-// impl Entity for Mesh {
-//     fn get(&self, entities: &Entities, handle: &Handle<Self>) -> &Self {
-//         entities.meshes.get()
-//     }
-//     fn get_mut(&mut self, entities: &mut Entities) -> &mut Self {}
-//     fn insert(&mut self, entities: &mut Entities) -> Handle<Self> {}
-// }
-
 impl Mesh {
     pub fn new(
         vertex: Vertex,

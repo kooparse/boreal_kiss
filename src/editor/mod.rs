@@ -143,6 +143,7 @@ impl Editor {
                 let is_current =
                     self.selected_handle.map_or(false, |sh| sh == handle);
 
+                ray_intersect_aabb((origin, direction), entity);
                 let (is_hit, t) =
                     entity.collider.map_or((false, 0.), |collider| {
                         match &collider {
@@ -153,7 +154,7 @@ impl Editor {
                                 sphere_hit((origin, direction), entity)
                             }
                             Collider::Cube => {
-                                intersect_ray_cube((origin, direction), entity)
+                                intersect_ray_box((origin, direction), entity)
                             }
                         }
                     });

@@ -27,7 +27,7 @@ impl Default for Camera {
             max_speed: 2.5,
             acceleration: 0.3,
 
-            position: glm::vec3(0.0, 1.0, 3.),
+            position: glm::vec3(0.0, 4.0, 3.),
             pos: (0., 0.),
             front: glm::vec3(0., 0., -1.),
             target: glm::vec3(0., 0., 0.),
@@ -44,6 +44,10 @@ impl Default for Camera {
 impl Camera {
     pub fn get_look_at(&self) -> glm::TMat4<f32> {
         glm::look_at(&self.position, &(self.position + self.front), &self.up)
+    }
+
+    pub fn look_at_player(&self, player_pos: glm::Vec3) -> glm::TMat4<f32> {
+        glm::look_at(&self.position, &player_pos, &self.up)
     }
 
     pub fn update(&mut self, input: &mut Input, time: &Time) {
