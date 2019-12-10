@@ -85,7 +85,10 @@ impl Renderer {
 
                 if value == 0 {
                     let color = Rgba::new(0., 1., 1., 1.);
-                    draw_mesh(&primitives::create_tiles(transform, color), None);
+                    draw_mesh(
+                        &primitives::create_tiles(transform, color),
+                        None,
+                    );
                 } else if value == 1 {
                     let color = Rgba::new(0., 1., 0., 1.);
                     transform.position.1 = 1.;
@@ -110,11 +113,20 @@ impl Renderer {
                 } else if value == 4 {
                     let color = Rgba::new(1., 0., 1., 1.);
                     let p_color = Rgba::new(0., 1., 1., 1.);
-                    draw_mesh(&primitives::create_tiles(transform, p_color), None);
+                    draw_mesh(
+                        &primitives::create_tiles(transform, p_color),
+                        None,
+                    );
                     transform.position.1 = 0.5;
                     transform.scale = Vector(0.5, 0.5, 0.5);
                     draw_mesh(
                         &primitives::create_cube(transform, None, color),
+                        None,
+                    );
+                } else if value == 5 {
+                    let color = Rgba::new(0.3, 0.4, 0.2, 1.);
+                    draw_mesh(
+                        &primitives::create_tiles(transform, color),
                         None,
                     );
                 }

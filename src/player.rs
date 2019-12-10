@@ -10,7 +10,7 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             capacity: 1,
-            map_pos: (0, 0),
+            map_pos: (9, 0),
         }
     }
 }

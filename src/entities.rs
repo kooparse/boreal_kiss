@@ -5,6 +5,16 @@ use std::iter::Iterator;
 use std::marker::PhantomData;
 use std::mem::*;
 
+#[derive(Default)]
+struct Block {}
+
+#[derive(Default)]
+struct Wall {}
+
+#[derive(Default)]
+struct CapacityPusher {}
+
+
 pub trait Entity<T> {
     fn get(&self, handle: &Handle<T>) -> &T;
     fn get_mut(&mut self, handle: &Handle<T>) -> &mut T;
