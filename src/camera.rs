@@ -1,4 +1,5 @@
 use crate::input::{Input, Key};
+use crate::player::Player;
 use crate::time::Time;
 use nalgebra_glm as glm;
 
@@ -46,8 +47,25 @@ impl Camera {
         glm::look_at(&self.position, &(self.position + self.front), &self.up)
     }
 
-    pub fn look_at_player(&self, player_pos: glm::Vec3) -> glm::TMat4<f32> {
-        glm::look_at(&self.position, &player_pos, &self.up)
+    pub fn look_at_player(&self, player: &Player) -> glm::TMat4<f32> {
+        let offset = glm::vec2(
+            player.tilemap_pos.world.x as f32,
+            player.tilemap_pos.world.y as f32,
+        ) * 2.;
+
+        dbg!(&offset);
+        let mut x = player.world_pos.x as f32 * 2.;
+        let y = 1.;
+        let mut z = player.world_pos.z as f32 * 2.;
+
+        // Used for drawing the world map.
+        x += offset.x as f32 * (10 as f32 * 2.);
+        z += offset.y as f32 * (20 as f32 * 2.);
+
+        let player_pos = glm::vec3(x, y, z);
+
+        let padding = player_pos + glm::vec3(0., 3., -5.);
+        glm::look_at(&padding, &player_pos, &self.up)
     }
 
     pub fn update(&mut self, input: &mut Input, time: &Time) {

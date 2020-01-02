@@ -26,10 +26,7 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Self {
-
         let t = glm::vec3(2., 2., 2.);
-        dbg!(t.normalize());
-
 
         Self {
             timer: Timer::new(0.5),

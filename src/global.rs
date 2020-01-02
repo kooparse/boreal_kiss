@@ -19,10 +19,17 @@ lazy_static! {
     pub static ref VIEW_MATRIX: Mutex<glm::Mat4> = Mutex::new(glm::identity());
 }
 
-pub static mut SCREEN_WIDTH: f32 = 1600.;
-pub static mut SCREEN_HEIGHT: f32 = 1000.;
+// Window stuff.
+pub static mut SCREEN_WIDTH: f32 = 1980.;
+pub static mut SCREEN_HEIGHT: f32 = 1024.;
 pub static mut SCREEN_DPI: u32 = 2;
 pub static WITH_VSYNC: bool = false;
 pub static MULTISAMPLING: u16 = 8;
-
 pub const GAME_NAME: &str = "Game";
+
+// Map stuff
+pub static TILES_COUNT: (i32, i32) = (10, 20);
+pub static TILEMAPS_COUNT: (i32, i32) = (5, 7);
+pub static TILE_SIZE: f32 = 2.;
+pub static TILEMAP_WIDTH: f32 = TILES_COUNT.0 as f32 * TILE_SIZE;
+pub static TILEMAP_HEIGHT: f32 = TILES_COUNT.1 as f32 * TILE_SIZE;

@@ -7,7 +7,9 @@ use std::cmp::PartialEq;
 // COLOR
 //
 //
-
+pub trait Colors {
+    fn red() -> Self;
+}
 /// Define RGBA color.
 /// From 0 (black) to 1 (white).
 #[derive(Debug, Copy, Clone)]
@@ -21,6 +23,12 @@ pub struct Rgba {
 impl Rgba {
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
+    }
+}
+
+impl Colors for Rgba {
+    fn red() -> Self {
+        Self::new(1., 0., 0., 1.)
     }
 }
 

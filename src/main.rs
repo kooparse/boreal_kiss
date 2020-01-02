@@ -11,6 +11,8 @@ mod platform;
 mod player;
 mod renderer;
 mod time;
+mod wall;
+mod camera;
 
 use editor::Editor;
 use entities::{Entities, Entity};
@@ -18,6 +20,7 @@ use game_loop::GameLoop;
 use global::*;
 use input::{Input, Key};
 use renderer::{Renderer, Rgba};
+use camera::Camera;
 
 fn main() {
     // Panic if platform not supported otherwise
@@ -36,28 +39,28 @@ fn main() {
     let mut game_loop = GameLoop::new();
     let mut input = Input::new();
     let mut entities = Entities::default();
+    let mut camera = Camera::default();
 
-    let mut renderer = Renderer::new(Rgba::new(0.1, 0.1, 0.2, 1.0));
+    let (mut world, mut player) = map::init_world_and_player(&mut entities);
+
+    let mut renderer =
+        Renderer::new(Rgba::new(0.1, 0.1, 0.2, 1.0), &mut entities);
 
     let mut editor = Editor::new();
     *VIEW_MATRIX.lock().unwrap() = editor.camera.get_look_at();
-
-    // Add the debug scene for now.
-    for mesh in debug_scenes::scene_mesh(&mut entities).into_iter() {
-        entities.insert(mesh);
-    }
-
-    let mut map = map::Map::default();
+    // *VIEW_MATRIX.lock().unwrap() = camera.look_at_player(&player);
 
     game_loop.start(|time| {
         platform.map_winit_inputs(&mut input);
 
         // Editor stuff here. With menu etc...
         editor.run(&mut entities, &platform, &mut input, &mut renderer, time);
-        entities.player.move_on_grid(&mut input, &mut map);
+        player.move_player(&time, &mut input, &mut world, &mut entities);
+
+        // *VIEW_MATRIX.lock().unwrap() = camera.look_at_player(&player);
 
         renderer.clear_screen();
-        renderer.draw(&mut entities, &map);
+        renderer.draw(&mut entities, &world, &player);
 
         // Actually "draw": swap the back buffer into the front buffer.
         platform.swap_buffers();

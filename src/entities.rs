@@ -1,19 +1,10 @@
+use crate::wall::Wall;
+use crate::map::Tilemap;
 use crate::renderer::{LightProbes, Mesh, Text};
-use crate::player::Player;
 use std::fmt::Debug;
 use std::iter::Iterator;
 use std::marker::PhantomData;
 use std::mem::*;
-
-#[derive(Default)]
-struct Block {}
-
-#[derive(Default)]
-struct Wall {}
-
-#[derive(Default)]
-struct CapacityPusher {}
-
 
 pub trait Entity<T> {
     fn get(&self, handle: &Handle<T>) -> &T;
@@ -22,12 +13,23 @@ pub trait Entity<T> {
     fn remove(&mut self, value: Handle<T>);
 }
 
+pub struct Markers {
+    pub ground: Handle<Mesh>,
+    pub wall: Handle<Mesh>,
+    pub player: Handle<Mesh>,
+}
+
 #[derive(Default)]
 pub struct Entities {
     pub light_probes: Arena<LightProbes>,
     pub text_widgets: Arena<Text>,
     pub meshes: Arena<Mesh>,
-    pub player: Player,
+    pub walls: Arena<Wall>,
+    pub maps: Arena<Tilemap>,
+
+    // Some useful handle to remember.
+    // This should become "asset" with enum/hashmap instead.
+    pub markers: Option<Markers>,
 }
 
 impl Entity<Mesh> for Entities {
@@ -45,6 +47,25 @@ impl Entity<Mesh> for Entities {
 
     fn remove(&mut self, handle: Handle<Mesh>) {
         self.meshes.remove(handle);
+    }
+}
+
+impl Entity<Tilemap> for Entities {
+    fn get(&self, handle: &Handle<Tilemap>) -> &Tilemap {
+        self.maps.get(handle)
+    }
+
+    fn get_mut(&mut self, handle: &Handle<Tilemap>) -> &mut Tilemap {
+        let d = &mut self.maps;
+        d.get_mut(handle)
+    }
+
+    fn insert(&mut self, value: Tilemap) -> Handle<Tilemap> {
+        self.maps.insert(value)
+    }
+
+    fn remove(&mut self, handle: Handle<Tilemap>) {
+        self.maps.remove(handle);
     }
 }
 
@@ -81,6 +102,25 @@ impl Entity<LightProbes> for Entities {
 
     fn remove(&mut self, handle: Handle<LightProbes>) {
         self.light_probes.remove(handle);
+    }
+}
+
+impl Entity<Wall> for Entities {
+    fn get(&self, handle: &Handle<Wall>) -> &Wall {
+        self.walls.get(handle)
+    }
+
+    fn get_mut(&mut self, handle: &Handle<Wall>) -> &mut Wall {
+        let d = &mut self.walls;
+        d.get_mut(handle)
+    }
+
+    fn insert(&mut self, value: Wall) -> Handle<Wall> {
+        self.walls.insert(value)
+    }
+
+    fn remove(&mut self, handle: Handle<Wall>) {
+        self.walls.remove(handle);
     }
 }
 

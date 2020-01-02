@@ -9,29 +9,29 @@ pub fn scene_mesh(entities: &mut Entities) -> Vec<Mesh> {
     let lenght = 1.;
     let weight = 1.;
 
-    let mut transform = Transform::from_pos(position);
-    transform.scale = Vector(lenght, weight, weight);
-    transform.rotation = Vector(0., 0., 0.);
-    // transform.position = Vector(-lenght, weight, 0.);
-    let red = Rgba::new(1., 0., 0., 1.);
-    let axis_x = primitives::create_cube(transform, None, red);
+    // let mut transform = Transform::from_pos(position);
+    // transform.scale = Vector(lenght, weight, weight);
+    // transform.rotation = Vector(0., 0., 0.);
+    // // transform.position = Vector(-lenght, weight, 0.);
+    // let red = Rgba::new(1., 0., 0., 1.);
+    // let axis_x = primitives::create_cube(transform, None, red);
 
-    let mut transform = Transform::from_pos(position);
-    transform.scale = Vector(lenght, weight, weight);
-    transform.rotation = Vector(0., 0., 90f32.to_radians());
-    transform.position = Vector(0., lenght, 0.);
-    let green = Rgba::new(0., 1., 0., 1.);
-    let axis_y = primitives::create_cube(transform, None, green);
+    // let mut transform = Transform::from_pos(position);
+    // transform.scale = Vector(lenght, weight, weight);
+    // transform.rotation = Vector(0., 0., 90f32.to_radians());
+    // transform.position = Vector(0., lenght, 0.);
+    // let green = Rgba::new(0., 1., 0., 1.);
+    // let axis_y = primitives::create_cube(transform, None, green);
 
-    let mut transform = Transform::from_pos(position);
-    transform.scale = Vector(lenght, weight, weight);
-    transform.rotation = Vector(0., 90f32.to_radians(), 0.);
-    // transform.position = Vector(0., weight, lenght);
-    let blue = Rgba::new(0., 0., 1., 1.);
-    let axis_z = primitives::create_cube(transform, None, blue);
+    // let mut transform = Transform::from_pos(position);
+    // transform.scale = Vector(lenght, weight, weight);
+    // transform.rotation = Vector(0., 90f32.to_radians(), 0.);
+    // // transform.position = Vector(0., weight, lenght);
+    // let blue = Rgba::new(0., 0., 1., 1.);
+    // let axis_z = primitives::create_cube(transform, None, blue);
 
     vec![
-        primitives::create_grid(Transform::default(), 20),
+        // primitives::create_grid(Transform::default(), 20),
         // axis_x,
         // axis_y,
         // axis_z,

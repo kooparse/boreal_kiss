@@ -10,9 +10,10 @@ mod texture;
 mod types;
 
 // Internal...
-use crate::entities::{Entities, Entity};
+use crate::entities::{Entities, Entity, Handle, Markers};
 use crate::global::*;
-use crate::map::Map;
+use crate::map::{Tile, World};
+use crate::player::Player;
 use draw::*;
 use font::Font;
 // Pub
@@ -21,7 +22,14 @@ pub use mesh::{Mesh, Transform, Vertex};
 pub use opengl::GpuBound;
 pub use shaders::ShaderManager;
 pub use text::Text;
-pub use types::{Rgb, Rgba, Vector};
+pub use types::{Colors, Rgb, Rgba, Vector};
+
+use nalgebra_glm as glm;
+
+struct MarkedHandle {
+    ground: Handle<Mesh>,
+    wall: Handle<Mesh>,
+}
 
 #[derive(Default)]
 pub struct DebugInfo {
@@ -39,7 +47,7 @@ pub struct Renderer {
 impl Renderer {
     /// Create, compile and generate vertex array objects (vao) for our
     /// renderer.
-    pub fn new(back_buffer_color: Rgba) -> Self {
+    pub fn new(back_buffer_color: Rgba, entities: &mut Entities) -> Self {
         // Panic if opengl functions not loaded.
         // Display OpenGL version on the console.
         opengl::get_opengl_loaded();
@@ -55,6 +63,32 @@ impl Renderer {
             "assets/fonts/Helvetica/helvetica.png",
         );
 
+        // Load mesh assets.
+        let ground = entities.insert(primitives::create_tiles(
+            "assets/textures/ground.png",
+            Transform::default(),
+            Rgba::new(0., 1., 1., 1.),
+        ));
+        let wall = entities.insert(primitives::create_cube(
+            "",
+            Transform::default(),
+            None,
+            Rgba::default(),
+        ));
+
+        let player = entities.insert(primitives::create_cube(
+            "assets/textures/player.png",
+            Transform::default(),
+            None,
+            Rgba::red(),
+        ));
+
+        entities.markers = Some(Markers {
+            ground,
+            wall,
+            player,
+        });
+
         Self {
             back_buffer_color,
             debug_info: DebugInfo::default(),
@@ -62,12 +96,17 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, entities: &mut Entities, map: &Map) {
-        let bbox_mesh = primitives::create_cube(
-            Transform::default(),
-            None,
-            Rgba::default(),
-        );
+    pub fn draw(
+        &mut self,
+        entities: &mut Entities,
+        world: &World,
+        player: &Player,
+    ) {
+        // let bbox_mesh = primitives::create_cube(
+        //     Transform::default(),
+        //     None,
+        //     Rgba::default(),
+        // );
 
         // Updates UBOs...
         SHADERS.update_all_ubo();
@@ -75,75 +114,13 @@ impl Renderer {
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
 
-        for i in 0..10 {
-            for j in 0..10 {
-                let value = map.grid[i][j];
+        let tilemap = entities.get(&player.tilemap_pos.handle);
+        draw_tilemap(entities, player, world, tilemap, Some(&player.tilemap_pos.world));
 
-                let x = i as f32 * 2.;
-                let z = j as f32 * 2.;
-                let mut transform = Transform::from_pos(Vector(x, 0., z));
-
-                if value == 0 {
-                    let color = Rgba::new(0., 1., 1., 1.);
-                    draw_mesh(
-                        &primitives::create_tiles(transform, color),
-                        None,
-                    );
-                } else if value == 1 {
-                    let color = Rgba::new(0., 1., 0., 1.);
-                    transform.position.1 = 1.;
-                    draw_mesh(
-                        &primitives::create_cube(transform, None, color),
-                        None,
-                    );
-                } else if value == 2 {
-                    let color = Rgba::new(1., 1., 0., 1.);
-                    transform.position.1 = 1.;
-                    draw_mesh(
-                        &primitives::create_cube(transform, None, color),
-                        None,
-                    );
-                } else if value == 3 {
-                    let color = Rgba::new(1., 0., 0., 1.);
-                    transform.position.1 = 1.;
-                    draw_mesh(
-                        &primitives::create_cube(transform, None, color),
-                        None,
-                    );
-                } else if value == 4 {
-                    let color = Rgba::new(1., 0., 1., 1.);
-                    let p_color = Rgba::new(0., 1., 1., 1.);
-                    draw_mesh(
-                        &primitives::create_tiles(transform, p_color),
-                        None,
-                    );
-                    transform.position.1 = 0.5;
-                    transform.scale = Vector(0.5, 0.5, 0.5);
-                    draw_mesh(
-                        &primitives::create_cube(transform, None, color),
-                        None,
-                    );
-                } else if value == 5 {
-                    let color = Rgba::new(0.3, 0.4, 0.2, 1.);
-                    draw_mesh(
-                        &primitives::create_tiles(transform, color),
-                        None,
-                    );
-                }
-            }
-        }
-
-        // Render all our meshes to the screen.
-        for (mesh, _) in entities.meshes.iter() {
-            self.debug_info.draw_call += 1;
-
-            let parent = mesh.parent.as_ref().map(|p| entities.get(&p));
-
-            if mesh.is_selected {
-                draw_bbox(mesh, &bbox_mesh);
-            }
-
-            draw_mesh(mesh, parent);
+        for (handle, pos) in world.get_sibling_tilemap(&player.tilemap_pos.world) {
+            // Render the "current" tilemap.
+            let tilemap = entities.get(&handle);
+            draw_tilemap(entities, player, world, tilemap, Some(&pos));
         }
 
         // Render all our light probes into the scene.

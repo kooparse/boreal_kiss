@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 /// Game input system.
 #[derive(Default)]
@@ -40,9 +41,10 @@ impl Input {
 
     /// Add keycode if not already there.
     pub fn register_key(&mut self, keycode: Key) {
-        self.keyboard
-            .entry(keycode)
-            .or_insert_with(|| KeyState { once: false });
+        self.keyboard.entry(keycode).or_insert_with(|| KeyState {
+            once: false,
+            delay: Instant::now(),
+        });
     }
 
     pub fn update_cursor_position(&mut self, position: Cursor) {
@@ -50,9 +52,10 @@ impl Input {
     }
 
     pub fn register_click(&mut self, button: MouseButton) {
-        self.mouse
-            .entry(button)
-            .or_insert_with(|| KeyState { once: false });
+        self.mouse.entry(button).or_insert_with(|| KeyState {
+            once: false,
+            delay: Instant::now(),
+        });
     }
 
     pub fn remove_click(&mut self, button: MouseButton) {
@@ -64,6 +67,18 @@ impl Input {
     /// Return true is specified key is pressed.
     pub fn is_pressed(&self, keycode: Key) -> bool {
         self.keyboard.contains_key(&keycode)
+    }
+
+    pub fn is_pressed_delay(&mut self, delay: Duration, keycode: Key) -> bool {
+        if let Some(key) = self.keyboard.get_mut(&keycode) {
+            if key.delay.elapsed() >= delay {
+                key.delay = Instant::now();
+                return true;
+            }
+            return false;
+        } else {
+            return false;
+        }
     }
 
     /// Return true is specified key is clicked.
@@ -133,6 +148,7 @@ impl Input {
 /// Key state, used for debounce.
 pub struct KeyState {
     once: bool,
+    delay: Instant,
 }
 
 /// Mouse state.

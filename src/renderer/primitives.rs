@@ -9,7 +9,8 @@ use crate::colliders::Collider;
 use crate::entities::Handle;
 use nalgebra_glm as glm;
 
-pub fn create_cube<'n>(
+pub fn create_cube<'n, 't>(
+    texture_path: &'t str,
     transform: Transform,
     parent: Option<Handle<Mesh>>,
     color: Rgba,
@@ -18,7 +19,9 @@ pub fn create_cube<'n>(
     let y_scalar = 1.;
     let z_scalar = 1.;
 
-    let vertex = Vertex {
+    let mut textures = vec![];
+
+    let mut vertex = Vertex {
         primitives: vec![
             Vector(-x_scalar, -y_scalar, z_scalar),
             Vector(x_scalar, -y_scalar, z_scalar),
@@ -43,9 +46,29 @@ pub fn create_cube<'n>(
         ..Default::default()
     };
 
+    if !texture_path.is_empty() {
+        vertex.colors = vec![];
+        vertex.uv_coords.push(UVSet::new(
+            0,
+            vec![
+                glm::vec2(1.0, 1.0),
+                glm::vec2(0.0, 1.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(1.0, 0.0),
+
+                glm::vec2(1.0, 1.0),
+                glm::vec2(0.0, 1.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(1.0, 0.0),
+            ],
+        ));
+
+        textures.push(Texture::from_file(texture_path));
+    };
+
     Mesh::new(
         vertex,
-        vec![],
+        textures,
         transform,
         parent,
         Some(Collider::Cube),
@@ -96,8 +119,14 @@ pub fn create_plane<'t>(texture_path: &'t str, transform: Transform) -> Mesh {
     )
 }
 
-pub fn create_tiles(transform: Transform, color: Rgba) -> Mesh {
-    let vertex = Vertex {
+pub fn create_tiles<'t>(
+    texture_path: &'t str,
+    transform: Transform,
+    color: Rgba,
+) -> Mesh {
+    let mut textures = vec![];
+
+    let mut vertex = Vertex {
         primitives: vec![
             Vector(-1., 0., -1.),
             Vector(-1., 0., 1.),
@@ -109,9 +138,22 @@ pub fn create_tiles(transform: Transform, color: Rgba) -> Mesh {
         ..Default::default()
     };
 
+    if !texture_path.is_empty() {
+        vertex.uv_coords.push(UVSet::new(
+            0,
+            vec![
+                glm::vec2(0.0, 0.0),
+                glm::vec2(1.0, 0.0),
+                glm::vec2(1.0, 1.0),
+                glm::vec2(0.0, 1.0),
+            ],
+        ));
+        textures.push(Texture::from_file(texture_path));
+    };
+
     Mesh::new(
         vertex,
-        vec![],
+        textures,
         transform,
         None,
         Some(Collider::Cube),

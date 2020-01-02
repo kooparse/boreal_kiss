@@ -1,10 +1,13 @@
 use super::{
     opengl,
     shaders::{self, ShaderType},
-    Font, Mesh, SunLight, Text, Transform,
+    Font, Mesh, Rgba, SunLight, Text, Transform, Vector,
 };
-use crate::colliders::{BoundingBox, Collider};
+// use crate::colliders::{BoundingBox, Collider};
 use crate::global::*;
+use crate::map::{Tile, Tilemap, World};
+use crate::player::Player;
+use crate::{Entities, Entity};
 use nalgebra_glm as glm;
 use std::ptr;
 
@@ -13,6 +16,86 @@ pub enum DrawMode {
     Triangles,
     Lines,
     Points,
+}
+
+pub fn draw_world(entities: &Entities, player: &Player, world: &World) {
+    for i in 0..TILEMAPS_COUNT.0 {
+        for j in 0..TILEMAPS_COUNT.1 {
+            let pos = glm::vec2(i as i32, j as i32);
+            let world_tilemap = world.get_tilemap(&pos);
+
+            if let Some(tilemap) = world_tilemap {
+                let tilemap = entities.get(&tilemap);
+                draw_tilemap(entities, player, world, tilemap, Some(&pos));
+            }
+        }
+    }
+}
+
+pub fn draw_tilemap(
+    entities: &Entities,
+    player: &Player,
+    world: &World,
+    tilemap: &Tilemap,
+    offset: Option<&glm::TVec2<i32>>,
+) {
+    for x in 0..TILES_COUNT.0 {
+        for y in 0..TILES_COUNT.1 {
+            let tile = tilemap.get_tile(x, y);
+
+            let mut x = world.offset.x + x as f32 * TILE_SIZE;
+            // Grid is in 2d, so "y" become "z" in 3d.
+            let mut z = world.offset.y + y as f32 * TILE_SIZE;
+
+            // Used for drawing the world map.
+            if let Some(offset) = offset {
+                x += offset.x as f32 * TILEMAP_WIDTH;
+                z += offset.y as f32 * TILEMAP_HEIGHT;
+            }
+
+            let position = Transform::from_pos(Vector(x, 0., z));
+            draw_tile(entities, player, &tile, &position);
+        }
+    }
+}
+
+pub fn draw_tile(
+    entities: &Entities,
+    player: &Player,
+    tile: &Tile,
+    position: &Transform,
+) {
+    // Refence of all Tile meshes.
+    let markers = &entities
+        .markers
+        .as_ref()
+        .expect("WTF, marker should be loaded before");
+
+    // Always draw the ground (for now).
+    let ground = entities.get(&markers.ground);
+    draw_mesh(ground, None, position);
+
+    // Match the tile type, and draw accordingly.
+    // After, i should call func like "draw_player" or "draw_wall".
+    match tile {
+        Tile::Wall(handle) => {
+            let wall = entities.get(handle);
+            let mut transform = position.clone();
+            transform.position = Vector(wall.world_pos.x, 1., wall.world_pos.y);
+            draw_mesh(&entities.get(&markers.wall), None, &transform);
+        }
+        Tile::Player => {
+            let mut transform = position.clone();
+            // transform.position.1 = 1.;
+            transform.position = Vector(
+                player.world_pos.x * TILE_SIZE,
+                1.,
+                player.world_pos.z * TILE_SIZE,
+            );
+            draw_mesh(&entities.get(&markers.player), None, &transform);
+        }
+        _ => {}
+    };
 }
 
 // obb
@@ -56,10 +139,7 @@ pub fn draw_bbox(entity: &Mesh, bbox: &Mesh) {
     }
 }
 
-pub fn draw_mesh(
-    mesh: &Mesh,
-    parent: Option<&Mesh>,
-) {
+pub fn draw_mesh(mesh: &Mesh, parent: Option<&Mesh>, position: &Transform) {
     if mesh.is_hidden {
         return;
     }
@@ -77,8 +157,8 @@ pub fn draw_mesh(
         }
     }
 
-    let mut entity_model = mesh.transform.to_model();
-    // Perform parent transform to child. 
+    let mut entity_model = position.to_model();
+    // Perform parent transform to child.
     if let Some(parent) = parent {
         entity_model = parent.transform.to_model() * entity_model;
     }
