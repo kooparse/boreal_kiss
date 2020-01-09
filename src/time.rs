@@ -15,6 +15,7 @@ impl Time {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Timer {
     threshold: f64,
     elapsed: f64, 

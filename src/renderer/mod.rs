@@ -12,7 +12,7 @@ mod types;
 // Internal...
 use crate::entities::{Entities, Entity, Handle, Markers};
 use crate::global::*;
-use crate::map::{Tile, World};
+use crate::tilemap::{Tile, World};
 use crate::player::Player;
 use draw::*;
 use font::Font;
@@ -114,6 +114,7 @@ impl Renderer {
         // Reset the debug counter.
         self.debug_info.draw_call = 0;
 
+        // Draw current tilemap.
         let tilemap = entities.get(&player.tilemap_pos.handle);
         draw_tilemap(entities, player, world, tilemap, Some(&player.tilemap_pos.world));
 

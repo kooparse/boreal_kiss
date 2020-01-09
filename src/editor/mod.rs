@@ -26,8 +26,6 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Self {
-        let t = glm::vec3(2., 2., 2.);
-
         Self {
             timer: Timer::new(0.5),
             camera: Camera::default(),
@@ -48,18 +46,23 @@ impl Editor {
             renderer.toggle_wireframe();
         };
 
-        // Permute select mode
-        if input.modifiers.shift {
-            if input.is_pressed_once(Key::L) {
-                self.object_mode = match self.object_mode {
-                    ObjectTransformMode::Position => {
-                        ObjectTransformMode::Rotation
-                    }
-                    ObjectTransformMode::Rotation => ObjectTransformMode::Scale,
-                    ObjectTransformMode::Scale => ObjectTransformMode::Position,
-                };
-            }
+        if input.is_pressed_once(Key::J) {
+            dbg!(self.camera.front);
+            dbg!(self.camera.position);
         }
+
+        // Permute select mode
+        // if input.modifiers.shift {
+        //     if input.is_pressed_once(Key::L) {
+        //         self.object_mode = match self.object_mode {
+        //             ObjectTransformMode::Position => {
+        //                 ObjectTransformMode::Rotation
+        //             }
+        //             ObjectTransformMode::Rotation => ObjectTransformMode::Scale,
+        //             ObjectTransformMode::Scale => ObjectTransformMode::Position,
+        //         };
+        //     }
+        // }
 
         // Timer to smooth debug text.
         if self.timer.is_passed(time.dt, 0.1) {

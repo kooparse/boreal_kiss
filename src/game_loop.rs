@@ -9,7 +9,7 @@ pub struct GameLoop {
     frame_rate: Duration,
     should_close: bool,
     start: Duration,
-    time: Time,
+    pub time: Time,
 }
 
 impl GameLoop {

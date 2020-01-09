@@ -1,0 +1,26 @@
+{
+  "name": "zone_1",
+  "world_pos": {
+    "row": 0,
+    "col": 0
+  },
+
+  tilemap: [
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null],
+    [null, null, null, null, null, null null, null, null, null]
+  ],
+
+  entities: 
+
+}

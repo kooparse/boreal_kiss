@@ -1,4 +1,4 @@
-use crate::player::MoveAnimation;
+// use crate::player::MoveAnimation;
 use nalgebra_glm as glm;
 
 #[derive(Debug, Copy, Clone)]
@@ -7,7 +7,7 @@ pub struct Wall {
     pub map_pos: glm::TVec2<i32>,
     pub is_pushable: bool,
 
-    pub move_animation: Option<MoveAnimation>,
+    // pub move_animation: Option<MoveAnimation>,
 }
 
 impl Wall {
@@ -32,7 +32,7 @@ impl Default for Wall {
             map_pos: glm::vec2(0, 0),
             is_pushable: false,
 
-            move_animation: None,
+            // move_animation: None,
         }
     }
 }

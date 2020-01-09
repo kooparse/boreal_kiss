@@ -1,12 +1,11 @@
 use super::{
     opengl,
     shaders::{self, ShaderType},
-    Font, Mesh, Rgba, SunLight, Text, Transform, Vector,
+    Font, Mesh, SunLight, Text, Transform, Vector,
 };
-// use crate::colliders::{BoundingBox, Collider};
 use crate::global::*;
-use crate::map::{Tile, Tilemap, World};
 use crate::player::Player;
+use crate::tilemap::{Tile, Tilemap, World};
 use crate::{Entities, Entity};
 use nalgebra_glm as glm;
 use std::ptr;
@@ -88,10 +87,11 @@ pub fn draw_tile(
             let mut transform = position.clone();
             // transform.position.1 = 1.;
             transform.position = Vector(
-                player.world_pos.x * TILE_SIZE,
-                1.,
-                player.world_pos.z * TILE_SIZE,
+                player.world_pos.x,
+                player.world_pos.y,
+                player.world_pos.z,
             );
+
             draw_mesh(&entities.get(&markers.player), None, &transform);
         }
         _ => {}

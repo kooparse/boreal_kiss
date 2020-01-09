@@ -103,6 +103,11 @@ impl World {
             glm::vec2(0, -1),
             glm::vec2(1, 0),
             glm::vec2(-1, 0),
+
+            glm::vec2(-1, 1),
+            glm::vec2(1, 1),
+            glm::vec2(1, -1),
+            glm::vec2(-1, -1),
         ];
 
         for delta in deltas.iter() {
@@ -194,32 +199,9 @@ pub enum Tile {
 #[derive(Debug)]
 pub struct Tilemap {
     pub grid: [[Tile; 10]; 20],
-    // [
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    // ]
 }
 
-/// When we want to access position on the grid, we have to invert x and y.
+/// When we want to access/insert tile on the grid, we have to invert x and y.
 impl Tilemap {
     pub fn get_tile(&self, x: i32, y: i32) -> Tile {
         self.grid[y as usize][x as usize]
@@ -493,49 +475,3 @@ impl Default for Tilemap {
         Self { grid }
     }
 }
-
-// 0 => nothing
-// 1 => pushable_wall
-// 2 => player
-// 3 => wall
-// 4 => capacity pusher
-// 5 => exit
-
-// grid: [
-//     [0, 0, 3, 3, 3, 0, 0, 0, 0, 5],
-//     [0, 3, 3, 0, 3, 0, 3, 1, 3, 0],
-//     [0, 3, 4, 1, 3, 0, 3, 1, 3, 0],
-//     [0, 3, 3, 0, 3, 0, 3, 1, 0, 0],
-//     [3, 3, 0, 0, 3, 3, 0, 1, 0, 3],
-//     [0, 3, 0, 3, 0, 0, 0, 0, 3, 0],
-//     [1, 0, 0, 1, 1, 0, 0, 3, 3, 0],
-//     [0, 3, 3, 3, 0, 0, 3, 0, 3, 0],
-//     [0, 3, 0, 0, 0, 0, 3, 3, 3, 0],
-//     [2, 3, 0, 0, 0, 4, 0, 3, 3, 0],
-// ],
-
-// pub fn world_to_grid(
-//     tilemap: &Tilemap,
-//     world_pos: &glm::TVec2<f32>,
-// ) -> glm::TVec2<i32> {
-//     let unit_width = tilemap.width / tilemap.size.0 as f32;
-//     let unit_height = tilemap.height / tilemap.size.1 as f32;
-
-//     let x = world_pos.x / unit_width;
-//     let y = world_pos.y / unit_height;
-
-//     glm::vec2(y as i32, x as i32)
-// }
-
-// pub fn grid_to_world(
-//     tilemap: &Tilemap,
-//     map_pos: &glm::TVec2<i32>,
-// ) -> glm::TVec2<f32> {
-//     let unit_width = tilemap.width / tilemap.size.0 as f32;
-//     let unit_height = tilemap.height / tilemap.size.1 as f32;
-
-//     let x = map_pos.x as f32 * unit_width;
-//     let y = map_pos.y as f32 * unit_height;
-
-//     glm::vec2(x, y)
-// }

@@ -1,111 +1,61 @@
-use crate::entities::{Entities, Entity, Handle};
+use crate::camera::{CamRotation, Camera};
+use crate::entities::{Entities, Entity};
+use crate::global::TILE_SIZE;
 use crate::input::{Input, Key};
-use crate::map::{AbsolutePosition, Tile, Tilemap, World};
+use crate::tilemap::{AbsolutePosition, Tile, World};
 use crate::time::Time;
-use crate::wall::Wall;
 use nalgebra_glm as glm;
 use std::time::Duration;
 
-#[derive(Copy, Clone, Debug)]
-pub enum MoveDirection {
-    Up,
-    Down,
-    Right,
-    Left,
-}
-
-impl MoveDirection {
-    fn to_grid_delta(&self) -> glm::TVec2<i32> {
-        match self {
-            Self::Up => glm::vec2(0, 1),
-            Self::Down => glm::vec2(0, -1),
-            Self::Right => glm::vec2(-1, 0),
-            Self::Left => glm::vec2(1, 0),
-        }
-    }
-
-    fn to_world_delta(&self) -> glm::TVec3<f32> {
-        match self {
-            Self::Up => glm::vec3(0., 1., 1.),
-            Self::Down => glm::vec3(0., 1., -1.),
-            Self::Right => glm::vec3(-1., 1., 0.),
-            Self::Left => glm::vec3(1., 1., 0.),
-        }
-    }
-
-    // TODO: Not precise 'cause of tick delta.
-    fn is_near(
-        &self,
-        world_pos: &glm::TVec2<f32>,
-        end_pos: &glm::TVec2<f32>,
-    ) -> bool {
-        return match self {
-            Self::Up => world_pos >= end_pos,
-            Self::Down => world_pos <= end_pos,
-            Self::Right => world_pos <= end_pos,
-            Self::Left => world_pos >= end_pos,
-        };
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct MoveAnimation {
-    direction: MoveDirection,
-    destination: glm::TVec2<f32>,
-}
-
 pub struct Player {
-    // On where map the player is.
-    // pub map_handle: Handle<Tilemap>,
     pub tilemap_pos: AbsolutePosition,
     pub world_pos: glm::TVec3<f32>,
-    // Animation...
-    // move_animation: Option<MoveAnimation>,
+    pub end_pos: glm::TVec3<f32>,
 }
 
 impl Player {
     pub fn new(tilemap_pos: AbsolutePosition) -> Self {
         let world_pos = glm::vec3(
-            tilemap_pos.tilemap.x as f32,
+            tilemap_pos.tilemap.x as f32 * TILE_SIZE,
             1.,
-            tilemap_pos.tilemap.y as f32,
+            tilemap_pos.tilemap.y as f32 * TILE_SIZE,
         );
 
         Self {
-            // map_handle,
             tilemap_pos,
             world_pos,
-            // move_animation: None,
+            end_pos: world_pos,
         }
     }
 
-    pub fn move_player(
+    pub fn update_player(
         &mut self,
         time: &Time,
+        camera: &Camera,
         input: &mut Input,
         mut world: &mut World,
         mut entities: &mut Entities,
     ) {
         let mut direction: Option<MoveDirection> = None;
-        let pressed_duration = Duration::from_millis(50);
+        let pressed_duration = Duration::from_millis(70);
 
         if input.is_pressed_delay(pressed_duration, Key::W) {
-            direction = Some(MoveDirection::Up);
+            direction = convert_dir_from_cam(&MoveDirection::Up, camera);
         };
 
         if input.is_pressed_delay(pressed_duration, Key::S) {
-            direction = Some(MoveDirection::Down);
+            direction = convert_dir_from_cam(&MoveDirection::Down, camera);
         };
 
         if input.is_pressed_delay(pressed_duration, Key::D) {
-            direction = Some(MoveDirection::Right);
+            direction = convert_dir_from_cam(&MoveDirection::Right, camera);
         };
 
         if input.is_pressed_delay(pressed_duration, Key::A) {
-            direction = Some(MoveDirection::Left);
+            direction = convert_dir_from_cam(&MoveDirection::Left, camera);
         };
 
-        let tilemap = entities.maps.get(&self.tilemap_pos.handle);
+        let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle);
 
         // let mut walls: Vec<Handle<Wall>> = vec![];
 
@@ -153,13 +103,13 @@ impl Player {
         //     return;
         // }
 
-        if input.is_pressed_once(Key::Space) {
-            dbg!(&self.tilemap_pos, tilemap.find_player());
-        }
-
         if input.modifiers.shift {
             return;
         }
+
+        let speed = 7. * time.dt as f32;
+        let a = glm::vec3(speed, 0., speed);
+        self.world_pos = glm::lerp_vec(&self.world_pos, &self.end_pos, &a);
 
         // Only if input is pressed.
         if let Some(dir) = direction {
@@ -171,18 +121,16 @@ impl Player {
                 delta,
                 &entities,
             ) {
-                let tilemap = entities.maps.get_mut(&self.tilemap_pos.handle);
+                let tilemap =
+                    entities.tilemaps.get_mut(&self.tilemap_pos.handle);
                 tilemap.set(self.tilemap_pos.tilemap, Tile::Ground);
-                let tilemap = entities.maps.get_mut(&next_pos.handle);
+                let tilemap = entities.tilemaps.get_mut(&next_pos.handle);
                 tilemap.set(next_pos.tilemap, Tile::Player);
                 self.tilemap_pos = next_pos;
 
-                self.world_pos = self.world_pos + dir.to_world_delta();
-
-                // self.move_animation = Some(MoveAnimation {
-                //     direction: dir,
-                //     destination: self.world_pos + dir.to_world_delta() * 2.,
-                // });
+                let end_pos = self.end_pos + (dir.to_world_delta() * TILE_SIZE);
+                self.end_pos =
+                    glm::vec3(end_pos.x, self.world_pos.y, end_pos.z);
 
                 return;
             }
@@ -279,5 +227,65 @@ impl Player {
         }
 
         return None;
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum MoveDirection {
+    Up,
+    Down,
+    Right,
+    Left,
+}
+
+impl MoveDirection {
+    fn to_grid_delta(&self) -> glm::TVec2<i32> {
+        match self {
+            Self::Up => glm::vec2(0, 1),
+            Self::Down => glm::vec2(0, -1),
+            Self::Right => glm::vec2(-1, 0),
+            Self::Left => glm::vec2(1, 0),
+        }
+    }
+
+    fn to_world_delta(&self) -> glm::TVec3<f32> {
+        match self {
+            Self::Up => glm::vec3(0., 0., 1.),
+            Self::Down => glm::vec3(0., 0., -1.),
+            Self::Right => glm::vec3(-1., 0., 0.),
+            Self::Left => glm::vec3(1., 0., 0.),
+        }
+    }
+}
+
+fn convert_dir_from_cam(
+    direction: &MoveDirection,
+    camera: &Camera,
+) -> Option<MoveDirection> {
+    match direction {
+        MoveDirection::Up => match camera.rotation {
+            CamRotation::Behind => Some(MoveDirection::Up),
+            CamRotation::Forward => Some(MoveDirection::Down),
+            CamRotation::FromLeft => Some(MoveDirection::Right),
+            CamRotation::FromRight => Some(MoveDirection::Left),
+        },
+        MoveDirection::Down => match camera.rotation {
+            CamRotation::Behind => Some(MoveDirection::Down),
+            CamRotation::Forward => Some(MoveDirection::Up),
+            CamRotation::FromLeft => Some(MoveDirection::Left),
+            CamRotation::FromRight => Some(MoveDirection::Right),
+        },
+        MoveDirection::Left => match camera.rotation {
+            CamRotation::Behind => Some(MoveDirection::Left),
+            CamRotation::Forward => Some(MoveDirection::Right),
+            CamRotation::FromLeft => Some(MoveDirection::Up),
+            CamRotation::FromRight => Some(MoveDirection::Down),
+        },
+        MoveDirection::Right => match camera.rotation {
+            CamRotation::Behind => Some(MoveDirection::Right),
+            CamRotation::Forward => Some(MoveDirection::Left),
+            CamRotation::FromLeft => Some(MoveDirection::Down),
+            CamRotation::FromRight => Some(MoveDirection::Up),
+        },
     }
 }

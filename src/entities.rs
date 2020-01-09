@@ -1,5 +1,5 @@
 use crate::wall::Wall;
-use crate::map::Tilemap;
+use crate::tilemap::Tilemap;
 use crate::renderer::{LightProbes, Mesh, Text};
 use std::fmt::Debug;
 use std::iter::Iterator;
@@ -25,7 +25,7 @@ pub struct Entities {
     pub text_widgets: Arena<Text>,
     pub meshes: Arena<Mesh>,
     pub walls: Arena<Wall>,
-    pub maps: Arena<Tilemap>,
+    pub tilemaps: Arena<Tilemap>,
 
     // Some useful handle to remember.
     // This should become "asset" with enum/hashmap instead.
@@ -52,20 +52,20 @@ impl Entity<Mesh> for Entities {
 
 impl Entity<Tilemap> for Entities {
     fn get(&self, handle: &Handle<Tilemap>) -> &Tilemap {
-        self.maps.get(handle)
+        self.tilemaps.get(handle)
     }
 
     fn get_mut(&mut self, handle: &Handle<Tilemap>) -> &mut Tilemap {
-        let d = &mut self.maps;
+        let d = &mut self.tilemaps;
         d.get_mut(handle)
     }
 
     fn insert(&mut self, value: Tilemap) -> Handle<Tilemap> {
-        self.maps.insert(value)
+        self.tilemaps.insert(value)
     }
 
     fn remove(&mut self, handle: Handle<Tilemap>) {
-        self.maps.remove(handle);
+        self.tilemaps.remove(handle);
     }
 }
 
