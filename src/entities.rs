@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::iter::Iterator;
 use std::marker::PhantomData;
 use std::mem::*;
+use serde::Deserialize;
 
 pub trait Entity<T> {
     fn get(&self, handle: &Handle<T>) -> &T;

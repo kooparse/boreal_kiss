@@ -72,18 +72,19 @@ pub fn draw_tile(
 
     // Always draw the ground (for now).
     let ground = entities.get(&markers.ground);
-    draw_mesh(ground, None, position);
 
     // Match the tile type, and draw accordingly.
     // After, i should call func like "draw_player" or "draw_wall".
     match tile {
         Tile::Wall(handle) => {
+            draw_mesh(ground, None, position);
             let wall = entities.get(handle);
             let mut transform = position.clone();
             transform.position = Vector(wall.world_pos.x, 1., wall.world_pos.y);
             draw_mesh(&entities.get(&markers.wall), None, &transform);
         }
         Tile::Player => {
+            draw_mesh(ground, None, position);
             let mut transform = position.clone();
             // transform.position.1 = 1.;
             transform.position = Vector(
@@ -94,7 +95,8 @@ pub fn draw_tile(
 
             draw_mesh(&entities.get(&markers.player), None, &transform);
         }
-        _ => {}
+        Tile::Ground => draw_mesh(ground, None, position),
+        Tile::Void => (),
     };
 }
 

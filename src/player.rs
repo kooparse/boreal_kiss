@@ -1,12 +1,13 @@
 use crate::camera::{CamRotation, Camera};
 use crate::entities::{Entities, Entity};
-use crate::global::TILE_SIZE;
+use crate::global::{TILEMAP_HEIGHT, TILEMAP_WIDTH, TILE_SIZE};
 use crate::input::{Input, Key};
 use crate::tilemap::{AbsolutePosition, Tile, World};
 use crate::time::Time;
 use nalgebra_glm as glm;
 use std::time::Duration;
 
+#[derive(Debug)]
 pub struct Player {
     pub tilemap_pos: AbsolutePosition,
     pub world_pos: glm::TVec3<f32>,
@@ -16,10 +17,14 @@ pub struct Player {
 impl Player {
     pub fn new(tilemap_pos: AbsolutePosition) -> Self {
         let world_pos = glm::vec3(
-            tilemap_pos.tilemap.x as f32 * TILE_SIZE,
+            (tilemap_pos.world.x as f32 * TILEMAP_WIDTH)
+                + tilemap_pos.tilemap.x as f32 * TILE_SIZE,
             1.,
-            tilemap_pos.tilemap.y as f32 * TILE_SIZE,
+            (tilemap_pos.world.y as f32 * TILEMAP_HEIGHT)
+                + tilemap_pos.tilemap.y as f32 * TILE_SIZE,
         );
+
+        dbg!(world_pos);
 
         Self {
             tilemap_pos,
@@ -56,6 +61,10 @@ impl Player {
         };
 
         let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle);
+
+        if input.is_pressed_once(Key::N) {
+            dbg!(&self);
+        }
 
         // let mut walls: Vec<Handle<Wall>> = vec![];
 

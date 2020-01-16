@@ -1,0 +1,15 @@
+{
+  "name": "mega_world",
+  "offset": [0, 0],
+  "dimension": [5, 7],
+  "grid": [
+    ["map_1", "map_2", null, null, null],
+    ["map_3", null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null],
+    [null, null, null, null, null]
+  ],
+  "player": [0, 0, 0, 0]
+}

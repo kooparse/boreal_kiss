@@ -1,26 +1,20 @@
 {
   "name": "zone_1",
-  "world_pos": {
-    "row": 0,
-    "col": 0
-  },
-
-  tilemap: [
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null],
-    [null, null, null, null, null, null null, null, null, null]
+  "dimension": [10, 13],
+  "grid": [
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
   ],
-
-  entities: 
-
+  "objects": []
 }

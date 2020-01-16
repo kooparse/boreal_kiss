@@ -1,49 +1,18 @@
 use crate::entities::{Entities, Entity, Handle};
-use crate::global::{TILEMAPS_COUNT, TILES_COUNT};
+use crate::global::{
+    TILEMAPS_COUNT, TILEMAPS_DIR_PATH, TILES_COUNT, WORLD_FILE_PATH,
+};
 use crate::player::Player;
 use crate::wall::Wall;
 use nalgebra_glm as glm;
+use serde::Deserialize;
+use std::fs::File;
+use std::io::{self, BufReader};
 use std::ops::Add;
 
 /// Create the game world.
 pub fn init_world_and_player(entities: &mut Entities) -> (World, Player) {
-    // Macro representation of the world.
-    let mut world_grid = [
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-        [None, None, None, None, None],
-    ];
-
-    // Place tile maps handles in the world.
-    world_grid[0][0] = Some(entities.insert(Tilemap::default()));
-    world_grid[0][1] = Some(entities.insert(Tilemap::default()));
-    world_grid[0][2] = Some(entities.insert(Tilemap::default()));
-    world_grid[0][3] = Some(entities.insert(Tilemap::default()));
-    world_grid[0][4] = Some(entities.insert(Tilemap::default()));
-    world_grid[1][3] = Some(entities.insert(Tilemap::default()));
-    world_grid[2][3] = Some(entities.insert(Tilemap::default()));
-    world_grid[2][2] = Some(entities.insert(Tilemap::default()));
-    world_grid[2][1] = Some(entities.insert(Tilemap::default()));
-    world_grid[2][0] = Some(entities.insert(Tilemap::default()));
-    world_grid[1][0] = Some(entities.insert(Tilemap::default()));
-    world_grid[6][4] = Some(entities.insert(Tilemap::default()));
-
-    // Place player.
-    let handle = world_grid[0][0].unwrap();
-    let first_tiles_map = entities.get_mut(&handle);
-    first_tiles_map.set(glm::vec2(2, 0), Tile::Player);
-
-    let player = Player::new(AbsolutePosition {
-        world: glm::vec2(0, 0),
-        tilemap: glm::vec2(2, 0),
-        handle,
-    });
-
-    (World::new(world_grid), player)
+    World::from_file(entities).unwrap()
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -79,17 +48,71 @@ impl Add<&glm::TVec2<i32>> for AbsolutePosition {
     }
 }
 
+type WorldGrid = Vec<Vec<Option<Handle<Tilemap>>>>;
+type LocalGrid = Vec<Vec<Tile>>;
+
 pub struct World {
+    pub name: String,
     pub offset: glm::TVec2<f32>,
-    pub grid: [[Option<Handle<Tilemap>>; 5]; 7],
+    pub grid: WorldGrid,
 }
 
 impl World {
-    pub fn new(grid: [[Option<Handle<Tilemap>>; 5]; 7]) -> Self {
+    pub fn new(grid: WorldGrid) -> Self {
         Self {
+            name: "uninitialized".to_owned(),
             offset: glm::vec2(0., 0.),
             grid,
         }
+    }
+
+    pub fn from_file(entities: &mut Entities) -> io::Result<(Self, Player)> {
+        let mut world = World::new(vec![vec![None; 5]; 7]);
+
+        let file =
+            File::open(WORLD_FILE_PATH).expect("World not found in map files");
+
+        let reader = BufReader::new(file);
+        let w: WorldFile = serde_json::from_reader(reader).unwrap();
+        world.offset = glm::vec2(w.offset.0, w.offset.1);
+        world.name = w.name;
+
+        for row in 0..w.dimension.0 as usize {
+            for col in 0..w.dimension.1 as usize {
+                if let Some(map_name) = &w.grid[col][row] {
+                    let file = File::open(format!(
+                        "{}{}.json",
+                        TILEMAPS_DIR_PATH, &map_name
+                    ))
+                    .expect("Tilemap not found in map files");
+                    let reader = BufReader::new(file);
+                    let map_file: MapFile = serde_json::from_reader(reader)?;
+
+                    let tilemap = Tilemap::from(map_file);
+                    let handle = entities.insert(tilemap);
+                    world.grid[col][row] = Some(handle);
+                } else {
+                    world.grid[col][row] = None;
+                }
+            }
+        }
+
+        // Place player.
+        let player_world_pos = glm::vec2(w.player.0, w.player.1);
+        let player_tilemap_pos = glm::vec2(w.player.2, w.player.3);
+        let handle = world
+            .get_tilemap(&player_world_pos)
+            .expect("Error :: No player was set in the world map!");
+
+        let player_tilemap = entities.get_mut(&handle);
+        player_tilemap.set(player_tilemap_pos, Tile::Player);
+        let player = Player::new(AbsolutePosition {
+            world: player_world_pos,
+            tilemap: player_tilemap_pos,
+            handle,
+        });
+
+        Ok((world, player))
     }
 
     pub fn get_sibling_tilemap(
@@ -103,7 +126,6 @@ impl World {
             glm::vec2(0, -1),
             glm::vec2(1, 0),
             glm::vec2(-1, 0),
-
             glm::vec2(-1, 1),
             glm::vec2(1, 1),
             glm::vec2(1, -1),
@@ -194,11 +216,58 @@ pub enum Tile {
     Wall(Handle<Wall>),
     Player,
     Ground,
+    Void,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MapFile {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    pathfile: String,
+    dimension: (i32, i32),
+    grid: [[Option<i32>; 10]; 13],
+}
+
+#[derive(Debug, Deserialize)]
+pub struct WorldFile {
+    name: String,
+    offset: (f32, f32),
+    player: (i32, i32, i32, i32),
+    dimension: (i32, i32),
+    grid: Vec<Vec<Option<String>>>,
 }
 
 #[derive(Debug)]
 pub struct Tilemap {
-    pub grid: [[Tile; 10]; 20],
+    pub name: String,
+    pub pathfile: String,
+    pub grid: LocalGrid,
+}
+
+impl From<MapFile> for Tilemap {
+    fn from(u: MapFile) -> Self {
+        let mut grid = vec![vec![Tile::Ground; 10]; 13];
+
+        for i in 0..u.dimension.0 as usize {
+            for j in 0..u.dimension.1 as usize {
+                if let Some(val) = &u.grid[j][i] {
+                    grid[j][i] = match val {
+                        1 => Tile::Ground,
+                        _ => Tile::Void,
+                    }
+                } else {
+                    grid[j][i] = Tile::Void;
+                }
+            }
+        }
+
+        Self {
+            grid,
+            name: u.name,
+            pathfile: u.pathfile,
+        }
+    }
 }
 
 /// When we want to access/insert tile on the grid, we have to invert x and y.
@@ -224,254 +293,5 @@ impl Tilemap {
         }
 
         player_pos
-    }
-}
-
-impl Default for Tilemap {
-    fn default() -> Self {
-        let grid = [
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-            [
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-                Tile::Ground,
-            ],
-        ];
-
-        Self { grid }
     }
 }

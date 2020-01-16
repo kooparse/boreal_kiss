@@ -12,8 +12,8 @@ mod types;
 // Internal...
 use crate::entities::{Entities, Entity, Handle, Markers};
 use crate::global::*;
-use crate::tilemap::{Tile, World};
 use crate::player::Player;
+use crate::tilemap::{Tile, World};
 use draw::*;
 use font::Font;
 // Pub
@@ -116,9 +116,19 @@ impl Renderer {
 
         // Draw current tilemap.
         let tilemap = entities.get(&player.tilemap_pos.handle);
-        draw_tilemap(entities, player, world, tilemap, Some(&player.tilemap_pos.world));
+        dbg!(&player.tilemap_pos);
+        draw_tilemap(
+            entities,
+            player,
+            world,
+            tilemap,
+            Some(&player.tilemap_pos.world),
+        );
 
-        for (handle, pos) in world.get_sibling_tilemap(&player.tilemap_pos.world) {
+
+        for (handle, pos) in
+            world.get_sibling_tilemap(&player.tilemap_pos.world)
+        {
             // Render the "current" tilemap.
             let tilemap = entities.get(&handle);
             draw_tilemap(entities, player, world, tilemap, Some(&pos));
