@@ -5,6 +5,7 @@ mod editor;
 mod entities;
 mod game_loop;
 mod global;
+mod gui;
 mod input;
 mod math;
 mod platform;
@@ -19,8 +20,9 @@ use editor::Editor;
 use entities::{Entities, Entity};
 use game_loop::GameLoop;
 use global::*;
+use gui::{Button, Container, TextInput, GUI};
 use input::{Input, Key};
-use renderer::{Renderer, Rgba};
+use renderer::{Colors, Font, Renderer, Rgb, Rgba, Text};
 use tilemap::init_world_and_player;
 
 fn main() {
@@ -41,6 +43,62 @@ fn main() {
     let mut input = Input::new();
     let mut entities = Entities::default();
 
+    let mut font = Font::new(
+        "assets/fonts/Helvetica/helvetica.json",
+        "assets/fonts/Helvetica/helvetica.png",
+    );
+
+    let mut counter = 0;
+
+    let submit = Button::new(Text::new("counter: 0").color(Rgb::black()))
+        .width(120.)
+        .height(40.)
+        .margin(2.5)
+        .bg_color(Rgba::new(1., 0.5, 0.5, 1.))
+        .callback(move |text| {
+            counter += 1;
+            text.set_content(&format!("counter: {}", counter));
+        });
+
+    let save = Button::new(Text::new("save"))
+        .width(120.)
+        .height(40.)
+        .margin(2.5)
+        .bg_color(Rgba::new(1., 1., 0.5, 1.))
+        .text_color(Rgb::new(0., 0., 0.))
+        .callback(move |_| {
+            dbg!("clicked!");
+        });
+
+    let test = Button::new(Text::new("test"))
+        .width(120.)
+        .height(40.)
+        .margin(2.5)
+        .bg_color(Rgba::new(0.5, 1., 0.5, 1.))
+        .text_color(Rgb::new(0., 0., 1.))
+        .callback(move |_| {
+            dbg!("clicked!");
+        });
+
+    let text_input = TextInput::new().padding(8.).on_update(|_| {});
+
+    let col_left = Container::row().margin(5.).push(test);
+    let row_right = Container::col()
+        .margin(5.)
+        .push(text_input)
+        .push(save)
+        .push(submit);
+
+    let container = Container::row()
+        .width(800.)
+        .height(600.)
+        .margin(5.)
+        .push(col_left)
+        .push(row_right);
+
+    let mut gui = GUI::new().add_elem(container);
+    gui.draw(&mut font);
+
     let (mut world, mut player) = init_world_and_player(&mut entities);
     let mut camera = Camera::new(&player);
 
@@ -58,6 +116,8 @@ fn main() {
         if input.modifiers.ctrl && input.is_pressed_once(Key::L) {
             is_debug_mode = !is_debug_mode;
         }
+
+        gui.on_event(&mut input);
 
         // Editor stuff here. With menu etc...
         player.update_player(
@@ -83,7 +143,8 @@ fn main() {
         }
 
         renderer.clear_screen();
-        renderer.draw(&mut entities, &world, &player);
+        renderer.draw(&mut entities, &world, &player, &mut font);
+        gui.draw(&mut font);
 
         // Actually "draw": swap the back buffer into the front buffer.
         platform.swap_buffers();

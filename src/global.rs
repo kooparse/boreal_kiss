@@ -19,14 +19,13 @@ lazy_static! {
     pub static ref VIEW_MATRIX: Mutex<glm::Mat4> = Mutex::new(glm::identity());
 }
 
-
 // Path stuff.
 pub static WORLD_FILE_PATH: &str = "assets/maps/world.json";
 pub static TILEMAPS_DIR_PATH: &str = "assets/maps/";
 
 // Window stuff.
-pub static mut SCREEN_WIDTH: f32 = 1980.;
-pub static mut SCREEN_HEIGHT: f32 = 1024.;
+pub static mut SCREEN_WIDTH: f32 = 800.;
+pub static mut SCREEN_HEIGHT: f32 = 600.;
 pub static mut SCREEN_DPI: u32 = 2;
 pub static WITH_VSYNC: bool = false;
 pub static MULTISAMPLING: u16 = 8;

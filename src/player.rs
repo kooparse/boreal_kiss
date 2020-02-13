@@ -44,23 +44,23 @@ impl Player {
         let mut direction: Option<MoveDirection> = None;
         let pressed_duration = Duration::from_millis(70);
 
-        if input.is_pressed_delay(pressed_duration, Key::W) {
+        if input.is_pressed_delay(pressed_duration, &Key::W) {
             direction = convert_dir_from_cam(&MoveDirection::Up, camera);
         };
 
-        if input.is_pressed_delay(pressed_duration, Key::S) {
+        if input.is_pressed_delay(pressed_duration, &Key::S) {
             direction = convert_dir_from_cam(&MoveDirection::Down, camera);
         };
 
-        if input.is_pressed_delay(pressed_duration, Key::D) {
+        if input.is_pressed_delay(pressed_duration, &Key::D) {
             direction = convert_dir_from_cam(&MoveDirection::Right, camera);
         };
 
-        if input.is_pressed_delay(pressed_duration, Key::A) {
+        if input.is_pressed_delay(pressed_duration, &Key::A) {
             direction = convert_dir_from_cam(&MoveDirection::Left, camera);
         };
 
-        let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle);
+        let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle.unwrap());
 
         if input.is_pressed_once(Key::N) {
             dbg!(&self);
@@ -130,10 +130,12 @@ impl Player {
                 delta,
                 &entities,
             ) {
-                let tilemap =
-                    entities.tilemaps.get_mut(&self.tilemap_pos.handle);
+                let tilemap = entities
+                    .tilemaps
+                    .get_mut(&self.tilemap_pos.handle.unwrap());
                 tilemap.set(self.tilemap_pos.tilemap, Tile::Ground);
-                let tilemap = entities.tilemaps.get_mut(&next_pos.handle);
+                let tilemap =
+                    entities.tilemaps.get_mut(&next_pos.handle.unwrap());
                 tilemap.set(next_pos.tilemap, Tile::Player);
                 self.tilemap_pos = next_pos;
 
@@ -226,7 +228,7 @@ impl Player {
         entities: &Entities,
     ) -> Option<AbsolutePosition> {
         if let Some(new_position) = world.get_next_position(pos, &delta) {
-            let tilemap = entities.get(&new_position.handle);
+            let tilemap = entities.get(&new_position.handle.unwrap());
             let tile = tilemap
                 .get_tile(new_position.tilemap.x, new_position.tilemap.y);
             // Can move...

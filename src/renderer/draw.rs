@@ -1,9 +1,10 @@
 use super::{
     opengl,
     shaders::{self, ShaderType},
-    Font, Mesh, SunLight, Text, Transform, Vector,
+    Font, Mesh, Rgba, SunLight, Text, Transform, Vector,
 };
 use crate::global::*;
+use crate::gui::Button;
 use crate::player::Player;
 use crate::tilemap::{Tile, Tilemap, World};
 use crate::{Entities, Entity};
@@ -80,7 +81,9 @@ pub fn draw_tile(
             draw_mesh(ground, None, position);
             let wall = entities.get(handle);
             let mut transform = position.clone();
-            transform.position = Vector(wall.world_pos.x, 1., wall.world_pos.y);
+            // transform.position.1 = 1.;
+            transform.position =
+                Vector(wall.float_pos.x, wall.float_pos.y, wall.float_pos.z);
             draw_mesh(&entities.get(&markers.wall), None, &transform);
         }
         Tile::Player => {
@@ -212,6 +215,48 @@ pub fn draw_mesh(mesh: &Mesh, parent: Option<&Mesh>, position: &Transform) {
 // Draw directional sun light over the scene.
 pub fn draw_sun_light(_light_source: &SunLight) {
     // draw stuff.
+}
+
+pub fn draw_quad(mesh: &Mesh, transform: &Transform, bg_color: Rgba) {
+    let prog_id = SHADERS.activate(ShaderType::QuadShader);
+    opengl::use_shader_program(prog_id);
+
+    shaders::set_matrix4(
+        prog_id,
+        "projection",
+        ORTHO_MATRIX.lock().unwrap().as_slice(),
+    );
+
+    let (position, _, scale) = transform.to_glm();
+    let mut model = glm::Mat4::identity();
+    model = glm::translate(
+        &model,
+        &glm::vec3(
+            (0.5 * scale.x) + position.x,
+            (0.5 * scale.y) + position.y,
+            0.,
+        ),
+    );
+    model = glm::scale(&model, &glm::vec3(scale.x * 0.5, scale.y * 0.5, 1.));
+
+    shaders::set_matrix4(prog_id, "model", model.as_slice());
+    shaders::set_vec3(prog_id, "bg_c", &bg_color.into());
+
+    unsafe {
+        opengl::use_vao(mesh.gpu_bound.vao);
+
+        gl::Disable(gl::DEPTH_TEST);
+        gl::Disable(gl::BLEND);
+
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, mesh.gpu_bound.ebo.unwrap());
+        gl::DrawElements(
+            gl::TRIANGLES,
+            mesh.gpu_bound.primitives_len as i32,
+            gl::UNSIGNED_INT,
+            ptr::null(),
+        );
+        gl::Enable(gl::DEPTH_TEST);
+    }
 }
 
 // Render some text to the screen.

@@ -6,6 +6,9 @@ use std::time::{Duration, Instant};
 pub struct Input {
     keyboard: HashMap<Key, KeyState>,
     mouse: HashMap<MouseButton, KeyState>,
+
+    // Used for text input.
+    pub last_key_pressed: Option<Key>,
     pub cursor: Cursor,
     pub modifiers: Modifier,
 }
@@ -25,8 +28,10 @@ impl Input {
     pub fn update_key(&mut self, keycode: Key, is_pressed: bool) {
         if is_pressed {
             self.register_key(keycode);
+            self.last_key_pressed = None;
         } else {
             self.remove_key(keycode);
+            self.last_key_pressed = Some(keycode);
         }
     }
 
@@ -69,7 +74,7 @@ impl Input {
         self.keyboard.contains_key(&keycode)
     }
 
-    pub fn is_pressed_delay(&mut self, delay: Duration, keycode: Key) -> bool {
+    pub fn is_pressed_delay(&mut self, delay: Duration, keycode: &Key) -> bool {
         if let Some(key) = self.keyboard.get_mut(&keycode) {
             if key.delay.elapsed() >= delay {
                 key.delay = Instant::now();
@@ -78,6 +83,16 @@ impl Input {
             return false;
         } else {
             return false;
+        }
+    }
+
+    pub fn pressed_str(&mut self) -> Option<String> {
+        if let Some(last_key) = &self.last_key_pressed {
+            let s = last_key.to_str();
+            self.last_key_pressed = None;
+            s
+        } else {
+            None
         }
     }
 
@@ -162,7 +177,7 @@ pub struct Cursor {
 }
 
 /// List of all keys available.
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone)]
 pub enum Key {
     A,
     B,
@@ -209,6 +224,53 @@ pub enum Key {
     Up,
     Right,
     Enter,
+}
+
+impl Key {
+    fn to_str(&self) -> Option<String> {
+        let mut value = match self {
+            Key::A => Some("a"),
+            Key::B => Some("b"),
+            Key::C => Some("c"),
+            Key::D => Some("d"),
+            Key::E => Some("e"),
+            Key::F => Some("f"),
+            Key::G => Some("g"),
+            Key::H => Some("h"),
+            Key::I => Some("i"),
+            Key::J => Some("j"),
+            Key::K => Some("k"),
+            Key::L => Some("l"),
+            Key::M => Some("m"),
+            Key::N => Some("n"),
+            Key::O => Some("o"),
+            Key::P => Some("p"),
+            Key::K => Some("q"),
+            Key::R => Some("r"),
+            Key::S => Some("s"),
+            Key::T => Some("t"),
+            Key::U => Some("u"),
+            Key::V => Some("v"),
+            Key::W => Some("w"),
+            Key::X => Some("x"),
+            Key::Y => Some("y"),
+            Key::Z => Some("z"),
+            Key::Space => Some(" "),
+            Key::Key1 => Some("1"),
+            Key::Key2 => Some("2"),
+            Key::Key3 => Some("3"),
+            Key::Key4 => Some("4"),
+            Key::Key5 => Some("5"),
+            Key::Key6 => Some("6"),
+            Key::Key7 => Some("7"),
+            Key::Key8 => Some("8"),
+            Key::Key9 => Some("9"),
+            Key::Key0 => Some("0"),
+            _ => None,
+        };
+
+        value.map(|v| v.to_owned())
+    }
 }
 
 #[derive(Default)]

@@ -14,22 +14,16 @@ use crate::entities::{Entities, Entity, Handle, Markers};
 use crate::global::*;
 use crate::player::Player;
 use crate::tilemap::{Tile, World};
-use draw::*;
-use font::Font;
+pub use draw::*;
 // Pub
+pub use font::Font;
 pub use light::{LightProbes, SunLight};
 pub use mesh::{Mesh, Transform, Vertex};
 pub use opengl::GpuBound;
 pub use shaders::ShaderManager;
 pub use text::Text;
-pub use types::{Colors, Rgb, Rgba, Vector};
+pub use types::{Colors, Rgb, Rgba, Vector, Position, Dimension};
 
-use nalgebra_glm as glm;
-
-struct MarkedHandle {
-    ground: Handle<Mesh>,
-    wall: Handle<Mesh>,
-}
 
 #[derive(Default)]
 pub struct DebugInfo {
@@ -40,7 +34,6 @@ pub struct DebugInfo {
 
 pub struct Renderer {
     back_buffer_color: Rgba,
-    font: Font,
     pub debug_info: DebugInfo,
 }
 
@@ -57,11 +50,6 @@ impl Renderer {
 
         // First paint the back_buffer in the default color.
         opengl::clear(&back_buffer_color);
-
-        let font = Font::new(
-            "assets/fonts/Helvetica/helvetica.json",
-            "assets/fonts/Helvetica/helvetica.png",
-        );
 
         // Load mesh assets.
         let ground = entities.insert(primitives::create_tiles(
@@ -83,16 +71,19 @@ impl Renderer {
             Rgba::red(),
         ));
 
+        let quad =
+            entities.insert(primitives::create_quad(Transform::default()));
+
         entities.markers = Some(Markers {
             ground,
             wall,
             player,
+            quad,
         });
 
         Self {
             back_buffer_color,
             debug_info: DebugInfo::default(),
-            font,
         }
     }
 
@@ -101,6 +92,7 @@ impl Renderer {
         entities: &mut Entities,
         world: &World,
         player: &Player,
+        mut font: &mut Font,
     ) {
         // let bbox_mesh = primitives::create_cube(
         //     Transform::default(),
@@ -115,8 +107,7 @@ impl Renderer {
         self.debug_info.draw_call = 0;
 
         // Draw current tilemap.
-        let tilemap = entities.get(&player.tilemap_pos.handle);
-        dbg!(&player.tilemap_pos);
+        let tilemap = entities.get(&player.tilemap_pos.handle.unwrap());
         draw_tilemap(
             entities,
             player,
@@ -124,7 +115,6 @@ impl Renderer {
             tilemap,
             Some(&player.tilemap_pos.world),
         );
-
 
         for (handle, pos) in
             world.get_sibling_tilemap(&player.tilemap_pos.world)
@@ -145,8 +135,11 @@ impl Renderer {
         // Render all our GUI texts to the screen.
         for (text, _) in entities.text_widgets.iter() {
             self.debug_info.draw_call += 1;
-            draw_text(&mut self.font, text);
+            draw_text(&mut font, text);
         }
+
+        // let quad = entities.get(&entities.markers.as_ref().unwrap().quad);
+        // draw_quad(quad);
 
         // bbox goes out of scope so drop so gl cleanup functions are called.
     }

@@ -1,4 +1,3 @@
-use crate::global::*;
 use super::{
     opengl,
     shaders::{self, ShaderType},
@@ -6,6 +5,7 @@ use super::{
     texture::Texture,
     GpuBound,
 };
+use crate::global::*;
 use nalgebra_glm as glm;
 use serde::Deserialize;
 use std::{collections::HashMap, fs::File, io::BufReader};
@@ -37,7 +37,7 @@ pub struct Font {
     atlas_height: f32,
     #[serde(alias = "bold")]
     is_bold: bool,
-    size: f32,
+    pub size: f32,
     #[serde(skip_deserializing)]
     text_caching: HashMap<String, GpuBound>,
 }
@@ -59,6 +59,40 @@ impl Font {
         font
     }
 
+    pub fn text_length(&self, text: &Text) -> (f32, f32) {
+        let scale = text.font_size / self.size;
+        let mut cursor = 0.;
+        let (mut width, mut height) = (0., 0.);
+
+        let content: Vec<(f32, f32)> = text
+            .content
+            .split("")
+            .filter_map(|c| {
+                self.characters.get(c).and_then(|l| {
+                    let x_pos = (cursor - l.origin_x) * scale;
+                    let y_pos = (0. - (l.height - l.origin_y)) * scale;
+                    let h = y_pos + (l.height * scale);
+                    let w = l.width * scale;
+
+                    if height <= h {
+                        height = h;
+                    }
+
+                    if height <= h {
+                        height = h;
+                    }
+
+                    cursor += l.advance;
+                    return Some((x_pos, x_pos + w));
+                })
+            })
+            .collect();
+
+        width = content[content.len() - 1].1 - content[0].0;
+
+        (width, height)
+    }
+
     pub fn render(&mut self, text: &Text) {
         let scale = text.font_size / self.size;
 
@@ -72,48 +106,47 @@ impl Font {
 
         let mut cursor = 0.;
         let mut vertices: Vec<f32> = vec![];
+        let length = self.text_length(&text);
 
-        text.content
-            .split("")
-            .for_each(|letter| {
-                // If character not found in our atlas, we skip.
-                if self.characters.get(letter).is_none() {
-                    println!("Character {} skipped.", letter);
-                    return;
-                }
+        text.content.split("").for_each(|letter| {
+            // If character not found in our atlas, we skip.
+            if self.characters.get(letter).is_none() {
+                println!("Character {} skipped.", letter);
+                return;
+            }
 
-                // We can unwrap it safely now.
-                let letter = self.characters.get(letter).unwrap();
+            // We can unwrap it safely now.
+            let letter = self.characters.get(letter).unwrap();
 
-                let (top_left, top_right, bottom_left, bottom_right) = {
-                    let top_left = (
-                        letter.atlas_pos_x / self.atlas_width,
-                        letter.atlas_pos_y / self.atlas_height,
-                    );
+            let (top_left, top_right, bottom_left, bottom_right) = {
+                let top_left = (
+                    letter.atlas_pos_x / self.atlas_width,
+                    letter.atlas_pos_y / self.atlas_height,
+                );
 
-                    let top_right = (
-                        top_left.0 + (letter.width / self.atlas_width),
-                        top_left.1,
-                    );
+                let top_right = (
+                    top_left.0 + (letter.width / self.atlas_width),
+                    top_left.1,
+                );
 
-                    let bottom_left = (
-                        top_left.0,
-                        top_left.1 + (letter.height / self.atlas_height),
-                    );
+                let bottom_left = (
+                    top_left.0,
+                    top_left.1 + (letter.height / self.atlas_height),
+                );
 
-                    let bottom_right = (top_right.0, bottom_left.1);
+                let bottom_right = (top_right.0, bottom_left.1);
 
-                    (top_left, top_right, bottom_left, bottom_right)
-                };
+                (top_left, top_right, bottom_left, bottom_right)
+            };
 
-                let x_pos = (cursor - letter.origin_x) * scale;
-                // 0 is our baseline.
-                let y_pos = (0. - (letter.height - letter.origin_y)) * scale;
-                let width = letter.width * scale;
-                let height = letter.height * scale;
+            let x_pos = (cursor - letter.origin_x) * scale;
+            // 0 is our baseline.
+            let y_pos = (0. - (letter.height - letter.origin_y)) * scale;
+            let width = letter.width * scale;
+            let height = letter.height * scale;
 
-                // Quad data for our character.
-                #[rustfmt::skip]
+            // Quad data for our character.
+            #[rustfmt::skip]
                 let character_quad: [f32; 24] = [
                     x_pos, y_pos + height,  top_left.0, top_left.1,
                     x_pos,  y_pos,          bottom_left.0, bottom_left.1,
@@ -124,9 +157,10 @@ impl Font {
                     x_pos + width, y_pos + height, top_right.0, top_right.1,
                 ];
 
-                vertices.extend_from_slice(&character_quad);
-                cursor += letter.advance;
-            });
+            vertices.extend_from_slice(&character_quad);
+
+            cursor += letter.advance;
+        });
 
         let (vao, vbo, tex_id) =
             opengl::load_font_to_gpu(&vertices, &self.atlas_texture);
@@ -141,16 +175,16 @@ impl Font {
         };
 
         self.to_opengl(&text, &gpu_bound);
+
         self.text_caching.insert(text.content.clone(), gpu_bound);
     }
 
-    fn to_opengl(
-        &self,
-        text: &Text,
-        gpu_bound: &GpuBound,
-    ) {
+    fn to_opengl(&self, text: &Text, gpu_bound: &GpuBound) {
         let Text {
-            position, color, font_size, ..
+            position,
+            color,
+            font_size,
+            ..
         } = text;
 
         opengl::use_vao(gpu_bound.vao);
@@ -159,15 +193,13 @@ impl Font {
         let mut model = glm::Mat4::identity();
         model = glm::translate(&model, &position.to_glm());
 
+        let size_ratio = font_size / self.size;
+
         let prog_id = SHADERS.get_program(ShaderType::TextShader);
         shaders::set_sampler(prog_id, 0);
         shaders::set_matrix4(prog_id, "model", model.as_slice());
-        shaders::set_f32(prog_id, "font_size", font_size / self.size);
-        shaders::set_vec3(
-            prog_id,
-            "text_color",
-            &color.into()
-        );
+        shaders::set_f32(prog_id, "font_size", size_ratio);
+        shaders::set_vec3(prog_id, "text_color", &color.into());
 
         unsafe {
             gl::Disable(gl::DEPTH_TEST);

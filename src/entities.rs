@@ -1,11 +1,10 @@
-use crate::wall::Wall;
-use crate::tilemap::Tilemap;
 use crate::renderer::{LightProbes, Mesh, Text};
+use crate::tilemap::Tilemap;
+use crate::wall::Wall;
 use std::fmt::Debug;
 use std::iter::Iterator;
 use std::marker::PhantomData;
 use std::mem::*;
-use serde::Deserialize;
 
 pub trait Entity<T> {
     fn get(&self, handle: &Handle<T>) -> &T;
@@ -18,15 +17,18 @@ pub struct Markers {
     pub ground: Handle<Mesh>,
     pub wall: Handle<Mesh>,
     pub player: Handle<Mesh>,
+    pub quad: Handle<Mesh>,
 }
 
 #[derive(Default)]
 pub struct Entities {
     pub light_probes: Arena<LightProbes>,
-    pub text_widgets: Arena<Text>,
     pub meshes: Arena<Mesh>,
     pub walls: Arena<Wall>,
     pub tilemaps: Arena<Tilemap>,
+
+    // Widgets.
+    pub text_widgets: Arena<Text>,
 
     // Some useful handle to remember.
     // This should become "asset" with enum/hashmap instead.
@@ -159,6 +161,11 @@ impl<T: Debug> Arena<T> {
             version_count: 0,
         }
     }
+
+    pub fn insert_vec(&mut self, values: Vec<T>) -> Vec<Handle<T>> {
+        values.into_iter().map(|value| self.insert(value)).collect()
+    }
+
     // We don't want to re-allocate when the data exceed the
     // vector capacity. We currently prefer to crash.
     pub fn insert(&mut self, value: T) -> Handle<T> {
@@ -287,7 +294,7 @@ impl<T: Debug> Default for Arena<T> {
 }
 
 #[derive(Debug, Default)]
-pub struct Handle<T> {
+pub struct Handle<T: ?Sized> {
     value: usize,
     version: usize,
     is_dirty: bool,

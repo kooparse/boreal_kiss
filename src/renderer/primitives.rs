@@ -9,6 +9,32 @@ use crate::colliders::Collider;
 use crate::entities::Handle;
 use nalgebra_glm as glm;
 
+pub fn create_quad(transform: Transform) -> Mesh {
+    let height = 1.;
+    let width = 1.;
+
+    let vertex = Vertex {
+        primitives: vec![
+            Vector(-1., -1., 0.),
+            Vector(-1., height, 0.),
+            Vector(width, height, 0.),
+            Vector(width, -1., 0.),
+        ],
+        indices: vec![0, 1, 2, 0, 2, 3],
+        ..Default::default()
+    };
+
+    Mesh::new(
+        vertex,
+        vec![],
+        transform,
+        None,
+        Some(Collider::Cube),
+        DrawMode::Triangles,
+        ShaderType::QuadShader,
+    )
+}
+
 pub fn create_cube<'n, 't>(
     texture_path: &'t str,
     transform: Transform,
@@ -55,7 +81,6 @@ pub fn create_cube<'n, 't>(
                 glm::vec2(0.0, 1.0),
                 glm::vec2(0.0, 0.0),
                 glm::vec2(1.0, 0.0),
-
                 glm::vec2(1.0, 1.0),
                 glm::vec2(0.0, 1.0),
                 glm::vec2(0.0, 0.0),

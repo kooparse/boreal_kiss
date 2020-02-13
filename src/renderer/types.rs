@@ -1,6 +1,46 @@
-use std::ops::{Mul, Add};
 use nalgebra_glm as glm;
 use std::cmp::PartialEq;
+use std::ops::{Add, Mul};
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Dimension {
+    pub width: f32,
+    pub height: f32,
+}
+
+impl Dimension {
+    pub fn new(width: f32, height: f32) -> Self {
+        Self { width, height }
+    }
+
+    pub fn get(&self) -> (f32, f32) {
+        (self.width, self.height)
+    }
+
+    pub fn center(&self) -> (f32, f32) {
+        (self.width * 0.5, self.height * 0.5)
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Position {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Position {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+
+    pub fn get(&self) -> (f32, f32) {
+        (self.x, self.y)
+    }
+
+    pub fn to_glm(&self) -> glm::TVec2<f32> {
+        glm::vec2(self.x, self.y)
+    }
+}
 
 //
 //
@@ -9,6 +49,10 @@ use std::cmp::PartialEq;
 //
 pub trait Colors {
     fn red() -> Self;
+    fn green() -> Self;
+    fn blue() -> Self;
+    fn black() -> Self;
+    fn white() -> Self;
 }
 /// Define RGBA color.
 /// From 0 (black) to 1 (white).
@@ -17,7 +61,7 @@ pub struct Rgba {
     pub r: f32,
     pub g: f32,
     pub b: f32,
-    pub a: f32
+    pub a: f32,
 }
 
 impl Rgba {
@@ -30,13 +74,25 @@ impl Colors for Rgba {
     fn red() -> Self {
         Self::new(1., 0., 0., 1.)
     }
+    fn black() -> Self {
+        Self::new(0., 0., 0., 1.)
+    }
+    fn white() -> Self {
+        Self::new(1., 1., 1., 1.)
+    }
+    fn green() -> Self {
+        Self::new(0., 1., 0., 1.)
+    }
+    fn blue() -> Self {
+        Self::new(0., 0., 1., 1.)
+    }
 }
 
 impl PartialEq for Rgba {
     fn eq(&self, other: &Self) -> bool {
-        self.r == other.r 
-            && self.g == other.g 
-            && self.b == other.b 
+        self.r == other.r
+            && self.g == other.g
+            && self.b == other.b
             && self.a == other.a
     }
 }
@@ -47,26 +103,21 @@ impl Default for Rgba {
     }
 }
 
-impl From<&Rgba> for [f32; 3] {
-    fn from(rgba: &Rgba) -> Self {
+impl From<Rgba> for [f32; 3] {
+    fn from(rgba: Rgba) -> Self {
         [rgba.r, rgba.g, rgba.b]
     }
 }
 
-impl From<&Rgba> for [f32; 4] {
-    fn from(rgba: &Rgba) -> Self {
+impl From<Rgba> for [f32; 4] {
+    fn from(rgba: Rgba) -> Self {
         [rgba.r, rgba.g, rgba.b, rgba.a]
     }
 }
 
 impl From<&Rgb> for Rgba {
     fn from(rgb: &Rgb) -> Self {
-        Self::new(
-            rgb.r, 
-            rgb.g, 
-            rgb.b,
-            1.,
-        )
+        Self::new(rgb.r, rgb.g, rgb.b, 1.)
     }
 }
 
@@ -85,11 +136,27 @@ impl Rgb {
     }
 }
 
+impl Colors for Rgb {
+    fn red() -> Self {
+        Self::new(1., 0., 0.)
+    }
+    fn black() -> Self {
+        Self::new(0., 0., 0.)
+    }
+    fn white() -> Self {
+        Self::new(1., 1., 1.)
+    }
+    fn green() -> Self {
+        Self::new(0., 1., 0.)
+    }
+    fn blue() -> Self {
+        Self::new(0., 0., 1.)
+    }
+}
+
 impl PartialEq for Rgb {
     fn eq(&self, other: &Self) -> bool {
-        self.r == other.r 
-            && self.g == other.g 
-            && self.b == other.b 
+        self.r == other.r && self.g == other.g && self.b == other.b
     }
 }
 
@@ -111,14 +178,9 @@ impl From<&Rgb> for [f32; 4] {
     }
 }
 
-
 impl From<&Rgba> for Rgb {
     fn from(rgba: &Rgba) -> Self {
-        Self::new(
-            rgba.r, 
-            rgba.g, 
-            rgba.b,
-        )
+        Self::new(rgba.r, rgba.g, rgba.b)
     }
 }
 
@@ -136,7 +198,14 @@ impl Mul<f32> for Vector {
 
     fn mul(self, rhs: f32) -> Self::Output {
         Self(self.0 * rhs, self.1 * rhs, self.2 * rhs)
+    }
+}
 
+impl Mul<Vector> for Vector {
+    type Output = Self;
+
+    fn mul(self, rhs: Vector) -> Self::Output {
+        Self(self.0 * rhs.0, self.1 * rhs.1, self.2 * rhs.2)
     }
 }
 
@@ -145,7 +214,6 @@ impl Add<f32> for Vector {
 
     fn add(self, rhs: f32) -> Self::Output {
         Self(self.0 + rhs, self.1 + rhs, self.2 + rhs)
-
     }
 }
 
@@ -154,7 +222,6 @@ impl Add<Vector> for Vector {
 
     fn add(self, rhs: Vector) -> Self::Output {
         Self(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2)
-
     }
 }
 

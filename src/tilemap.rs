@@ -1,6 +1,7 @@
 use crate::entities::{Entities, Entity, Handle};
 use crate::global::{
-    TILEMAPS_COUNT, TILEMAPS_DIR_PATH, TILES_COUNT, WORLD_FILE_PATH,
+    TILEMAPS_COUNT, TILEMAPS_DIR_PATH, TILEMAP_HEIGHT, TILEMAP_WIDTH,
+    TILES_COUNT, TILE_SIZE, WORLD_FILE_PATH,
 };
 use crate::player::Player;
 use crate::wall::Wall;
@@ -19,20 +20,30 @@ pub fn init_world_and_player(entities: &mut Entities) -> (World, Player) {
 pub struct AbsolutePosition {
     pub world: glm::TVec2<i32>,
     pub tilemap: glm::TVec2<i32>,
-    pub handle: Handle<Tilemap>,
+    pub handle: Option<Handle<Tilemap>>,
 }
 
 impl AbsolutePosition {
     pub fn new(
         world: glm::TVec2<i32>,
         tilemap: glm::TVec2<i32>,
-        handle: Handle<Tilemap>,
+        handle: Option<Handle<Tilemap>>,
     ) -> Self {
         Self {
             world,
             tilemap,
             handle,
         }
+    }
+
+    pub fn to_float_pos(&self) -> glm::TVec3<f32> {
+        let mut x = self.world.x as f32 * TILE_SIZE;
+        let mut z = self.world.y as f32 * TILE_SIZE;
+
+        x += self.tilemap.x as f32 * TILEMAP_WIDTH;
+        z += self.tilemap.y as f32 * TILEMAP_HEIGHT;
+
+        glm::vec3(x, 0., z)
     }
 }
 
@@ -66,7 +77,9 @@ impl World {
         }
     }
 
-    pub fn from_file(entities: &mut Entities) -> io::Result<(Self, Player)> {
+    pub fn from_file(
+        mut entities: &mut Entities,
+    ) -> io::Result<(Self, Player)> {
         let mut world = World::new(vec![vec![None; 5]; 7]);
 
         let file =
@@ -88,7 +101,11 @@ impl World {
                     let reader = BufReader::new(file);
                     let map_file: MapFile = serde_json::from_reader(reader)?;
 
-                    let tilemap = Tilemap::from(map_file);
+                    let tilemap = Tilemap::from_file(
+                        map_file,
+                        (row as i32, col as i32),
+                        &mut entities,
+                    );
                     let handle = entities.insert(tilemap);
                     world.grid[col][row] = Some(handle);
                 } else {
@@ -109,7 +126,7 @@ impl World {
         let player = Player::new(AbsolutePosition {
             world: player_world_pos,
             tilemap: player_tilemap_pos,
-            handle,
+            handle: Some(handle),
         });
 
         Ok((world, player))
@@ -188,7 +205,7 @@ impl World {
         // There is a tilemap yay!
         if let Some(handle) = self.get_tilemap(&next_position.world) {
             next_position.tilemap = new_tile_position;
-            next_position.handle = handle;
+            next_position.handle = Some(handle);
             return Some(next_position);
         }
 
@@ -272,6 +289,43 @@ impl From<MapFile> for Tilemap {
 
 /// When we want to access/insert tile on the grid, we have to invert x and y.
 impl Tilemap {
+    pub fn from_file(
+        u: MapFile,
+        absolute_pos: (i32, i32),
+        entities: &mut Entities,
+    ) -> Self {
+        let mut grid = vec![vec![Tile::Ground; 10]; 13];
+
+        for i in 0..u.dimension.0 as usize {
+            for j in 0..u.dimension.1 as usize {
+                if let Some(val) = &u.grid[j][i] {
+                    grid[j][i] = match val {
+                        1 => Tile::Ground,
+                        2 => {
+                            let position = AbsolutePosition::new(
+                                glm::vec2(absolute_pos.0, absolute_pos.1),
+                                glm::vec2(i as i32, j as i32),
+                                None,
+                            );
+                            let wall = Wall::new(position, false);
+                            let handle = entities.insert(wall);
+
+                            Tile::Wall(handle)
+                        }
+                        _ => Tile::Void,
+                    }
+                } else {
+                    grid[j][i] = Tile::Void;
+                }
+            }
+        }
+
+        Self {
+            grid,
+            name: u.name,
+            pathfile: u.pathfile,
+        }
+    }
     pub fn get_tile(&self, x: i32, y: i32) -> Tile {
         self.grid[y as usize][x as usize]
     }

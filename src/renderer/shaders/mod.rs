@@ -1,6 +1,7 @@
 pub mod light;
 pub mod simple;
 pub mod text;
+pub mod quad;
 
 use crate::global::*;
 use super::opengl;
@@ -16,6 +17,7 @@ pub enum ShaderType {
     SimpleShader,
     TextShader,
     LightShader,
+    QuadShader,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -84,6 +86,16 @@ impl ShaderManager {
             );
             list.insert(ShaderType::LightShader, program_id);
         }
+
+        {
+            let program_id = create_shader_program(
+                quad::VERTEX_SOURCE,
+                quad::FRAGMENT_SOURCE,
+                "",
+            );
+            list.insert(ShaderType::QuadShader, program_id);
+        }
+
 
         // Right now we have 2 UBOs.
         // SpaceTransform and Lights ones.
