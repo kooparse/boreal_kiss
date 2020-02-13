@@ -1,5 +1,5 @@
 [package]
-name = "bits"
+name = "boreal_kiss"
 version = "0.1.0"
 authors = ["Alexandre Chêne <kooparse@protonmail.com>"]
 edition = "2018"

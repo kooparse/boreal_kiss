@@ -29,7 +29,7 @@ pub static mut SCREEN_HEIGHT: f32 = 600.;
 pub static mut SCREEN_DPI: u32 = 2;
 pub static WITH_VSYNC: bool = false;
 pub static MULTISAMPLING: u16 = 8;
-pub const GAME_NAME: &str = "Game";
+pub const GAME_NAME: &str = "Boreal Kiss";
 
 // Map stuff
 pub static TILES_COUNT: (i32, i32) = (10, 13);
