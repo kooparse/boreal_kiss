@@ -133,11 +133,13 @@ impl Input {
     }
 
     /// TODO: Should debounce/throttle here.
+    #[allow(unused)]
     pub fn is_cursor_moved(&self) -> bool {
         self.cursor.has_moved
     }
 
     /// TODO: Should debounce/throttle here.
+    #[allow(unused)]
     pub fn is_dragged(&self) -> bool {
         self.cursor.is_dragged
     }
@@ -154,6 +156,7 @@ impl Input {
         false
     }
 
+    #[allow(unused)]
     pub fn clear(&mut self) {
         self.keyboard.clear();
         self.keyboard.shrink_to_fit();
@@ -228,7 +231,7 @@ pub enum Key {
 
 impl Key {
     fn to_str(&self) -> Option<String> {
-        let mut value = match self {
+        let value = match self {
             Key::A => Some("a"),
             Key::B => Some("b"),
             Key::C => Some("c"),
@@ -245,7 +248,7 @@ impl Key {
             Key::N => Some("n"),
             Key::O => Some("o"),
             Key::P => Some("p"),
-            Key::K => Some("q"),
+            Key::Q => Some("q"),
             Key::R => Some("r"),
             Key::S => Some("s"),
             Key::T => Some("t"),

@@ -162,6 +162,7 @@ impl<T: Debug> Arena<T> {
         }
     }
 
+    #[allow(unused)]
     pub fn insert_vec(&mut self, values: Vec<T>) -> Vec<Handle<T>> {
         values.into_iter().map(|value| self.insert(value)).collect()
     }

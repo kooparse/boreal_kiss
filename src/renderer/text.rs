@@ -1,4 +1,4 @@
-use super::{Rgb, Vector, Colors};
+use super::{Colors, Rgb, Vector};
 use std::hash::{Hash, Hasher};
 
 // Text that should be rendered with a specific
@@ -43,6 +43,14 @@ impl Text {
 
     pub fn set_content(&mut self, content: &str) {
         self.content = content.to_owned();
+    }
+
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty()
     }
 }
 

@@ -334,6 +334,7 @@ impl Tilemap {
         self.grid[position.y as usize][position.x as usize] = value;
     }
 
+    #[allow(unused)]
     pub fn find_player(&self) -> Option<glm::TVec2<i32>> {
         let mut player_pos = None;
 

@@ -22,8 +22,7 @@ pub use mesh::{Mesh, Transform, Vertex};
 pub use opengl::GpuBound;
 pub use shaders::ShaderManager;
 pub use text::Text;
-pub use types::{Colors, Rgb, Rgba, Vector, Position, Dimension};
-
+pub use types::{Colors, Dimension, Position, Rgb, Rgba, Vector};
 
 #[derive(Default)]
 pub struct DebugInfo {
@@ -92,7 +91,6 @@ impl Renderer {
         entities: &mut Entities,
         world: &World,
         player: &Player,
-        mut font: &mut Font,
     ) {
         // let bbox_mesh = primitives::create_cube(
         //     Transform::default(),
@@ -133,10 +131,10 @@ impl Renderer {
         }
 
         // Render all our GUI texts to the screen.
-        for (text, _) in entities.text_widgets.iter() {
-            self.debug_info.draw_call += 1;
-            draw_text(&mut font, text);
-        }
+        // for (text, _) in entities.text_widgets.iter() {
+        //     self.debug_info.draw_call += 1;
+        //     draw_text(&mut font, text);
+        // }
 
         // let quad = entities.get(&entities.markers.as_ref().unwrap().quad);
         // draw_quad(quad);

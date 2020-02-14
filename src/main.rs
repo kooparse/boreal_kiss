@@ -80,7 +80,14 @@ fn main() {
             dbg!("clicked!");
         });
 
-    let text_input = TextInput::new().padding(8.).on_update(|_| {});
+    let text_input = TextInput::new()
+        .label(Text::new("Text label :").color(Rgb::white()))
+        .value(Text::new("2").color(Rgb::white()))
+        .padding(8.)
+        .only_numbers(true)
+        .on_update(|t| {
+            dbg!(t.content());
+        });
 
     let col_left = Container::row().margin(5.).push(test);
     let row_right = Container::col()
@@ -143,7 +150,7 @@ fn main() {
         }
 
         renderer.clear_screen();
-        renderer.draw(&mut entities, &world, &player, &mut font);
+        renderer.draw(&mut entities, &world, &player);
         gui.draw(&mut font);
 
         // Actually "draw": swap the back buffer into the front buffer.

@@ -286,6 +286,7 @@ impl Widget for Container {
 pub struct TextInput {
     pub styles: Styles,
     pub value: Text,
+    pub label: Option<Text>,
     // pub label: String,
     pub is_focus: bool,
     pub is_hover: bool,
@@ -302,22 +303,36 @@ impl TextInput {
             ..Styles::default()
         };
 
-        let value = Text::new("Placeholder")
-            .font_size(26.)
-            .color(styles.text_color);
+        let value = Text::new("").font_size(26.).color(styles.text_color);
 
         Self {
             styles,
             value,
             is_focus: false,
             is_hover: false,
+            label: None,
             only_numbers: false,
             on_change: Box::new(|_| {}),
         }
     }
 
+    pub fn only_numbers(mut self, only_n: bool) -> Self {
+        self.only_numbers = only_n;
+        self
+    }
+
     pub fn padding(mut self, padding: f32) -> Self {
         self.styles.padding = padding;
+        self
+    }
+
+    pub fn value(mut self, value: Text) -> Self {
+        self.value = value;
+        self
+    }
+
+    pub fn label(mut self, label: Text) -> Self {
+        self.label = Some(label);
         self
     }
 
@@ -359,20 +374,36 @@ impl Widget for TextInput {
             return;
         }
 
+        let mut has_value_changed = false;
         if let Some(value) = input.pressed_str() {
-            self.value.content.push_str(value.as_str());
+            if self.only_numbers {
+                if value.parse::<f32>().is_ok() {
+                    self.value.content.push_str(value.as_str());
+                    has_value_changed = true;
+                }
+            } else {
+                self.value.content.push_str(value.as_str());
+                has_value_changed = true;
+            }
         }
 
         if input.is_pressed_once(Key::Bspc) {
             self.value.content.pop();
+            has_value_changed = true;
         }
 
-        (self.on_change)(&self.value);
+        if has_value_changed {
+            (self.on_change)(&self.value);
+        }
     }
 
     fn compute_layout(&mut self, pos: (f32, f32)) {
         self.styles.x = pos.0;
         self.styles.y = pos.1;
+
+        if let Some(label) = &mut self.label {
+            label.position = Vector(pos.0, pos.1, 0.);
+        }
 
         self.value.position =
             Vector(pos.0, pos.1 + self.styles.height * 0.5, 0.);
@@ -389,27 +420,32 @@ impl Widget for TextInput {
             ..
         } = self.styles;
 
-        // font.text_length(&self.value);
+        // 1. Draw the input box.
+        //
         let mut t = Transform::default();
         t.position = Vector(x, y, 0.);
         t.scale = Vector(width, height, 1.);
 
-        let txt_length = font.text_length(&self.value);
-        let mut text = Text {
-            position: Vector(0., 0., 0.),
-            ..self.value.clone()
-        };
-
         draw_quad(&quad, &t, bg_color);
 
-        let size_ratio = text.font_size / font.size;
-        text.position = Vector(
+        // 2. Draw the value of the input.
+        //
+        let txt_length = font.text_length(&self.value);
+        let size_ratio = self.value.font_size / font.size;
+        self.value.position = Vector(
             x + padding,
             (y + height * 0.5) + (-0.5 * txt_length.1 * size_ratio),
             0.,
         );
+        draw_text(font, &self.value);
 
-        draw_text(font, &text);
+        // 3. If label, draw the label.
+        //
+        if let Some(label) = &mut self.label {
+            let padding = 5.;
+            label.position = Vector(x, y + height + padding, 0.);
+            draw_text(font, &label);
+        }
     }
 
     fn get_styles(&self) -> &Styles {
@@ -421,7 +457,12 @@ impl Widget for TextInput {
     }
 
     fn get_dim(&self) -> (f32, f32) {
-        (self.styles.width, self.styles.height)
+        let mut dim = (self.styles.width, self.styles.height);
+        if let Some(_) = &self.label {
+            dim.1 += self.styles.height * 0.7;
+        }
+
+        dim
     }
 }
 

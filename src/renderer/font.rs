@@ -59,10 +59,15 @@ impl Font {
         font
     }
 
+    /// Compute the text length in pixels.
     pub fn text_length(&self, text: &Text) -> (f32, f32) {
         let scale = text.font_size / self.size;
         let mut cursor = 0.;
-        let (mut width, mut height) = (0., 0.);
+        let mut height = 0.;
+
+        if text.is_empty() {
+            return (0., height);
+        }
 
         let content: Vec<(f32, f32)> = text
             .content
@@ -88,7 +93,7 @@ impl Font {
             })
             .collect();
 
-        width = content[content.len() - 1].1 - content[0].0;
+        let width = content[content.len() - 1].1 - content[0].0;
 
         (width, height)
     }
@@ -106,47 +111,44 @@ impl Font {
 
         let mut cursor = 0.;
         let mut vertices: Vec<f32> = vec![];
-        let length = self.text_length(&text);
 
-        text.content.split("").for_each(|letter| {
+        text.content
+            .split("")
             // If character not found in our atlas, we skip.
-            if self.characters.get(letter).is_none() {
-                println!("Character {} skipped.", letter);
-                return;
-            }
+            .filter(|l| self.characters.get(l.to_owned()).is_some())
+            .for_each(|letter| {
+                // We can unwrap it safely now.
+                let letter = self.characters.get(letter).unwrap();
 
-            // We can unwrap it safely now.
-            let letter = self.characters.get(letter).unwrap();
+                let (top_left, top_right, bottom_left, bottom_right) = {
+                    let top_left = (
+                        letter.atlas_pos_x / self.atlas_width,
+                        letter.atlas_pos_y / self.atlas_height,
+                    );
 
-            let (top_left, top_right, bottom_left, bottom_right) = {
-                let top_left = (
-                    letter.atlas_pos_x / self.atlas_width,
-                    letter.atlas_pos_y / self.atlas_height,
-                );
+                    let top_right = (
+                        top_left.0 + (letter.width / self.atlas_width),
+                        top_left.1,
+                    );
 
-                let top_right = (
-                    top_left.0 + (letter.width / self.atlas_width),
-                    top_left.1,
-                );
+                    let bottom_left = (
+                        top_left.0,
+                        top_left.1 + (letter.height / self.atlas_height),
+                    );
 
-                let bottom_left = (
-                    top_left.0,
-                    top_left.1 + (letter.height / self.atlas_height),
-                );
+                    let bottom_right = (top_right.0, bottom_left.1);
 
-                let bottom_right = (top_right.0, bottom_left.1);
+                    (top_left, top_right, bottom_left, bottom_right)
+                };
 
-                (top_left, top_right, bottom_left, bottom_right)
-            };
+                let x_pos = (cursor - letter.origin_x) * scale;
+                // 0 is our baseline.
+                let y_pos = (0. - (letter.height - letter.origin_y)) * scale;
+                let width = letter.width * scale;
+                let height = letter.height * scale;
 
-            let x_pos = (cursor - letter.origin_x) * scale;
-            // 0 is our baseline.
-            let y_pos = (0. - (letter.height - letter.origin_y)) * scale;
-            let width = letter.width * scale;
-            let height = letter.height * scale;
-
-            // Quad data for our character.
-            #[rustfmt::skip]
+                // Quad data for our character.
+                #[rustfmt::skip]
                 let character_quad: [f32; 24] = [
                     x_pos, y_pos + height,  top_left.0, top_left.1,
                     x_pos,  y_pos,          bottom_left.0, bottom_left.1,
@@ -157,10 +159,10 @@ impl Font {
                     x_pos + width, y_pos + height, top_right.0, top_right.1,
                 ];
 
-            vertices.extend_from_slice(&character_quad);
+                vertices.extend_from_slice(&character_quad);
 
-            cursor += letter.advance;
-        });
+                cursor += letter.advance;
+            });
 
         let (vao, vbo, tex_id) =
             opengl::load_font_to_gpu(&vertices, &self.atlas_texture);
