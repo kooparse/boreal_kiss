@@ -3,9 +3,9 @@
   "offset": [0, 0],
   "dimension": [5, 7],
   "grid": [
-    ["map_1", "map_2", null, null, null],
-    ["map_3", null, null, null, null],
-    [null, null, null, null, null],
+    ["map_1", "map_2", "map_5", null, null],
+    ["map_3", null, "map_4", null, null],
+    ["map_4", null, null, null, null],
     [null, null, null, null, null],
     [null, null, null, null, null],
     [null, null, null, null, null],
