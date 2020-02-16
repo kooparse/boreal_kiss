@@ -35,7 +35,7 @@ impl Default for Camera {
             position: glm::vec3(0., 0., 0.),
             target_pos: glm::vec3(0., 0., 0.),
             up: glm::vec3(0., 1., 0.),
-            threshold: glm::vec3(0., 6., 0.),
+            threshold: glm::vec3(0., 4., 0.),
         }
     }
 }
@@ -47,10 +47,13 @@ impl Camera {
         input: &mut Input,
         time: &Time,
     ) -> glm::TMat4<f32> {
+        // Position of the left bottom point from
+        // the player. For now, the player is a cube with
+        // length of 1 in all axis.
         let player_pos = glm::vec3(
-            player.world_pos.x,
-            player.world_pos.y,
-            player.world_pos.z,
+            player.world_pos.x + 0.5,
+            player.world_pos.y + 0.5,
+            player.world_pos.z + 0.5,
         );
 
         if input.is_pressed_once(Key::H) {
@@ -61,7 +64,7 @@ impl Camera {
             self.rotation = self.rotation.rotate_sub();
         };
 
-        let end_pos = player_pos + self.threshold + self.rotation.rotate(10.);
+        let end_pos = player_pos + self.threshold + self.rotation.rotate(7.);
         let speed = 5. * time.dt as f32;
         let a = glm::vec3(speed, 1., speed);
 
@@ -103,10 +106,10 @@ impl CamRotation {
         let mut padding = glm::vec3(0., 0., 0.);
 
         match self {
-            Self::Behind => padding.z = -1.,
-            Self::FromRight => padding.x = -1.,
-            Self::Forward => padding.z = 1.,
-            Self::FromLeft => padding.x = 1.,
+            Self::Behind => padding.z += -1.,
+            Self::FromRight => padding.x += -1.,
+            Self::Forward => padding.z += 1.,
+            Self::FromLeft => padding.x += 1.,
         };
 
         padding * distance

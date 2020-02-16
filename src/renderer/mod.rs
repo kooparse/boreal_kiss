@@ -10,10 +10,10 @@ mod texture;
 mod types;
 
 // Internal...
-use crate::entities::{Entities, Entity, Handle, Markers};
+use crate::entities::{Entities, Entity, Markers};
 use crate::global::*;
 use crate::player::Player;
-use crate::tilemap::{Tile, World};
+use crate::tilemap::World;
 pub use draw::*;
 // Pub
 pub use font::Font;
@@ -51,11 +51,13 @@ impl Renderer {
         opengl::clear(&back_buffer_color);
 
         // Load mesh assets.
-        let ground = entities.insert(primitives::create_tiles(
+        let ground = entities.insert(primitives::create_cube(
             "assets/textures/ground.png",
-            Transform::default(),
+            Transform::default().scale(Vector(1., 0.5, 1.)),
+            None,
             Rgba::new(0., 1., 1., 1.),
         ));
+
         let wall = entities.insert(primitives::create_cube(
             "",
             Transform::default(),

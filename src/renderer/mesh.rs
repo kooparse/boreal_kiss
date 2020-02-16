@@ -23,12 +23,9 @@ pub struct Transform {
 }
 
 impl Transform {
-    pub fn new(position: Vector, rotation: Vector, scale: Vector) -> Self {
-        Self {
-            position,
-            rotation,
-            scale,
-        }
+    pub fn scale(mut self, scale: Vector) -> Self {
+        self.scale = scale;
+        self
     }
 
     pub fn from_pos(position: Vector) -> Self {

@@ -19,12 +19,10 @@ impl Player {
         let world_pos = glm::vec3(
             (tilemap_pos.world.x as f32 * TILEMAP_WIDTH)
                 + tilemap_pos.tilemap.x as f32 * TILE_SIZE,
-            1.,
+            0.,
             (tilemap_pos.world.y as f32 * TILEMAP_HEIGHT)
                 + tilemap_pos.tilemap.y as f32 * TILE_SIZE,
         );
-
-        dbg!(world_pos);
 
         Self {
             tilemap_pos,
@@ -39,7 +37,7 @@ impl Player {
         camera: &Camera,
         input: &mut Input,
         mut world: &mut World,
-        mut entities: &mut Entities,
+        entities: &mut Entities,
     ) {
         let mut direction: Option<MoveDirection> = None;
         let pressed_duration = Duration::from_millis(70);
@@ -60,7 +58,7 @@ impl Player {
             direction = convert_dir_from_cam(&MoveDirection::Left, camera);
         };
 
-        let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle.unwrap());
+        // let tilemap = entities.tilemaps.get(&self.tilemap_pos.handle.unwrap());
 
         if input.is_pressed_once(Key::N) {
             dbg!(&self);

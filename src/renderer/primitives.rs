@@ -41,32 +41,27 @@ pub fn create_cube<'n, 't>(
     parent: Option<Handle<Mesh>>,
     color: Rgba,
 ) -> Mesh {
-    let x_scalar = 1.;
-    let y_scalar = 1.;
-    let z_scalar = 1.;
-
     let mut textures = vec![];
 
+    // Unit size of 1.
     let mut vertex = Vertex {
         primitives: vec![
-            Vector(-x_scalar, -y_scalar, z_scalar),
-            Vector(x_scalar, -y_scalar, z_scalar),
-            Vector(x_scalar, y_scalar, z_scalar),
-            Vector(-x_scalar, y_scalar, z_scalar),
-            // back
-            Vector(-x_scalar, -y_scalar, -z_scalar),
-            Vector(x_scalar, -y_scalar, -z_scalar),
-            Vector(x_scalar, y_scalar, -z_scalar),
-            Vector(-x_scalar, y_scalar, -z_scalar),
+            Vector(0., 0., 0.),
+            Vector(1., 0., 0.),
+            Vector(1., 1., 0.),
+            Vector(0., 1., 0.),
+            Vector(0., 1., 1.),
+            Vector(1., 1., 1.),
+            Vector(1., 0., 1.),
+            Vector(0., 0., 1.),
         ],
         indices: vec![
-            // front
-            0, 1, 2, 2, 3, 0, // right
-            1, 5, 6, 6, 2, 1, // back
-            7, 6, 5, 5, 4, 7, // left
-            4, 0, 3, 3, 7, 4, // bottom
-            4, 5, 1, 1, 0, 4, // top
-            3, 2, 6, 6, 7, 3,
+            0, 2, 1, 0, 3, 2, // Front.
+            2, 3, 4, 2, 4, 5, // Top.
+            1, 2, 5, 1, 5, 6, // Right.
+            0, 7, 4, 0, 4, 3, // Left.
+            5, 4, 7, 5, 7, 6, // Back.
+            0, 6, 7, 0, 1, 6, // Bottom.
         ],
         colors: vec![color, color, color, color, color, color, color, color],
         ..Default::default()
@@ -78,13 +73,34 @@ pub fn create_cube<'n, 't>(
             0,
             vec![
                 glm::vec2(1.0, 1.0),
-                glm::vec2(0.0, 1.0),
-                glm::vec2(0.0, 0.0),
                 glm::vec2(1.0, 0.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
+
                 glm::vec2(1.0, 1.0),
-                glm::vec2(0.0, 1.0),
-                glm::vec2(0.0, 0.0),
                 glm::vec2(1.0, 0.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
+
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
+
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
+
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
+
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
+                glm::vec2(0.0, 0.0),
+                glm::vec2(0.0, 1.0),
             ],
         ));
 

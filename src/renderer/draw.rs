@@ -4,7 +4,6 @@ use super::{
     Font, Mesh, Rgba, SunLight, Text, Transform, Vector,
 };
 use crate::global::*;
-use crate::gui::Button;
 use crate::player::Player;
 use crate::tilemap::{Tile, Tilemap, World};
 use crate::{Entities, Entity};
@@ -14,10 +13,14 @@ use std::ptr;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DrawMode {
     Triangles,
+    #[allow(dead_code)]
     Lines,
+    #[allow(dead_code)]
     Points,
 }
 
+#[allow(unused)]
+/// Used for debug purpose only.
 pub fn draw_world(entities: &Entities, player: &Player, world: &World) {
     for i in 0..TILEMAPS_COUNT.0 {
         for j in 0..TILEMAPS_COUNT.1 {
@@ -78,7 +81,7 @@ pub fn draw_tile(
     // After, i should call func like "draw_player" or "draw_wall".
     match tile {
         Tile::Wall(handle) => {
-            draw_mesh(ground, None, position);
+            draw_ground(ground, position);
             let wall = entities.get(handle);
             let mut transform = position.clone();
             // transform.position.1 = 1.;
@@ -87,9 +90,8 @@ pub fn draw_tile(
             draw_mesh(&entities.get(&markers.wall), None, &transform);
         }
         Tile::Player => {
-            draw_mesh(ground, None, position);
+            draw_ground(ground, position);
             let mut transform = position.clone();
-            // transform.position.1 = 1.;
             transform.position = Vector(
                 player.world_pos.x,
                 player.world_pos.y,
@@ -98,9 +100,19 @@ pub fn draw_tile(
 
             draw_mesh(&entities.get(&markers.player), None, &transform);
         }
-        Tile::Ground => draw_mesh(ground, None, position),
+        Tile::Ground => {
+            draw_ground(ground, position);
+        }
         Tile::Void => (),
     };
+}
+
+fn draw_ground(ground: &Mesh, pos: &Transform) {
+    let mut transform = pos.clone();
+    let y_scale = 0.2;
+    transform.position.1 -= y_scale;
+    transform.scale = Vector(1., y_scale, 1.);
+    draw_mesh(ground, None, &transform)
 }
 
 // obb

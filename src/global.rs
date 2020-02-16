@@ -34,6 +34,6 @@ pub const GAME_NAME: &str = "Boreal Kiss";
 // Map stuff
 pub static TILES_COUNT: (i32, i32) = (10, 13);
 pub static TILEMAPS_COUNT: (i32, i32) = (5, 7);
-pub static TILE_SIZE: f32 = 2.;
+pub static TILE_SIZE: f32 = 1.;
 pub static TILEMAP_WIDTH: f32 = TILES_COUNT.0 as f32 * TILE_SIZE;
 pub static TILEMAP_HEIGHT: f32 = TILES_COUNT.1 as f32 * TILE_SIZE;

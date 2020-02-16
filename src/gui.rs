@@ -159,54 +159,6 @@ impl Container {
         self.compute_layout((0., 0.));
         self
     }
-
-    // fn compute_children_pos(&self) -> (f32, f32) {
-    //     let mut container_pos = (
-    //         self.styles.x + self.styles.margin,
-    //         self.styles.y + self.styles.margin,
-    //     );
-
-    //     let widget_total_dim = self.get_dim();
-
-    //     // If no width/height was set for the container, we take the
-    //     // width/height of inner children.
-    //     let (mut width, mut height) = {
-    //         let mut w = self.styles.width;
-    //         let mut h = self.styles.height;
-
-    //         if h == 0. {
-    //             h = widget_total_dim.1;
-    //         }
-
-    //         if w == 0. {
-    //             w = widget_total_dim.0;
-    //         }
-
-    //         (w, h)
-    //     };
-
-    //     match self.styles.align_x {
-    //         AlignX::Center => {
-    //             container_pos.0 += width / 2. - widget_total_dim.0 / 2.;
-    //         }
-    //         AlignX::Right => {
-    //             container_pos.0 += width - widget_total_dim.0;
-    //         }
-    //         _ => (),
-    //     }
-
-    //     match self.styles.align_y {
-    //         AlignY::Top => {
-    //             container_pos.1 += height - widget_total_dim.1;
-    //         }
-    //         AlignY::Middle => {
-    //             container_pos.1 += height / 2. - widget_total_dim.1 / 2.;
-    //         }
-    //         _ => (),
-    //     }
-
-    //     container_pos
-    // }
 }
 
 impl Widget for Container {

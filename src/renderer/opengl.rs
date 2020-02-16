@@ -205,14 +205,14 @@ pub fn load_bytes_to_gpu(vao: VAO, vertex: &Vertex) -> (VBO, Option<EBO>) {
         data_cursor += (vertex.colors.len() * mem::size_of::<Rgba>()) as isize;
 
         // Texture data.
-        vertex.uv_coords.iter().for_each(|set| {
+        vertex.uv_coords.iter().for_each(|uv| {
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
                 data_cursor,
-                (set.coords.len() * mem::size_of::<UV>()) as isize,
-                set.coords.as_ptr() as *const _,
+                (uv.coords.len() * mem::size_of::<UV>()) as isize,
+                uv.coords.as_ptr() as *const _,
             );
-            data_cursor += (set.coords.len() * mem::size_of::<UV>()) as isize;
+            data_cursor += (uv.coords.len() * mem::size_of::<UV>()) as isize;
         });
 
         // Create EBO if indices is not empty.
