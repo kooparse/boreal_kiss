@@ -72,15 +72,15 @@ pub fn create_cube<'n, 't>(
         vertex.uv_coords.push(UVSet::new(
             0,
             vec![
-                glm::vec2(1.0, 1.0),
-                glm::vec2(1.0, 0.0),
                 glm::vec2(0.0, 0.0),
                 glm::vec2(0.0, 1.0),
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
 
-                glm::vec2(1.0, 1.0),
-                glm::vec2(1.0, 0.0),
                 glm::vec2(0.0, 0.0),
                 glm::vec2(0.0, 1.0),
+                glm::vec2(1.0, 1.0),
+                glm::vec2(1.0, 0.0),
 
                 glm::vec2(1.0, 1.0),
                 glm::vec2(1.0, 0.0),

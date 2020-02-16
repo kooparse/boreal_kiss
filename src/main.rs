@@ -97,8 +97,8 @@ fn main() {
         .push(submit);
 
     let container = Container::row()
-        .width(800.)
-        .height(600.)
+        .width(1200.)
+        .height(800.)
         .margin(5.)
         .push(col_left)
         .push(row_right);
@@ -110,7 +110,7 @@ fn main() {
     let mut camera = Camera::new(&player);
 
     let mut renderer =
-        Renderer::new(Rgba::new(0.1, 0.1, 0.2, 1.0), &mut entities);
+        Renderer::new(Rgba::new(0.53, 0.81, 0.92, 1.0), &mut entities);
 
     let mut editor = Editor::new();
     *VIEW_MATRIX.lock().unwrap() = editor.camera.get_look_at();
