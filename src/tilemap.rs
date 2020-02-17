@@ -6,9 +6,10 @@ use crate::global::{
 use crate::player::Player;
 use crate::wall::Wall;
 use nalgebra_glm as glm;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::fs::File;
-use std::io::{self, BufReader};
+use std::io::{self, BufReader, BufWriter};
 use std::ops::Add;
 
 /// Create the game world.
@@ -236,7 +237,7 @@ pub enum Tile {
     Void,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MapFile {
     #[serde(default)]
     name: String,
@@ -326,6 +327,39 @@ impl Tilemap {
             pathfile: u.pathfile,
         }
     }
+
+    /// Save tilemap from main memory to file system.
+    pub fn to_file(&self) -> serde_json::Result<()> {
+        let mut grid = [[None; 10]; 13];
+
+        for i in 0..TILES_COUNT.0 as usize {
+            for j in 0..TILES_COUNT.1 as usize {
+                grid[j][i] = match self.grid[j][i] {
+                    Tile::Ground => Some(1),
+                    Tile::Player => Some(1),
+                    Tile::Wall(_) => Some(2),
+                    _ => None,
+                }
+            }
+        }
+
+        // TODO: Not really optimized here...
+        let file_descriptor = MapFile {
+            name: self.name.clone(),
+            pathfile: self.pathfile.clone(),
+            dimension: TILES_COUNT,
+            grid,
+        };
+
+        // If file not found, we create it.
+        let file = File::open(&self.pathfile)
+            .or_else(|_| File::create(&self.pathfile))
+            .expect("Failed to load or create file map.");
+
+        let writer = BufWriter::new(file);
+        serde_json::to_writer(writer, &file_descriptor)
+    }
+
     pub fn get_tile(&self, x: i32, y: i32) -> Tile {
         self.grid[y as usize][x as usize]
     }

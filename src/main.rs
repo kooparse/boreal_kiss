@@ -14,6 +14,7 @@ mod renderer;
 mod tilemap;
 mod time;
 mod wall;
+mod map_file;
 
 use camera::Camera;
 use editor::Editor;
