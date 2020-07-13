@@ -1,4 +1,4 @@
-This project was a try to make real 3D game Rust (and learn game stuff also). I rewrote everything in C so I decided to open sourced it instead. 
+`Note : This project was a try to make real 3D game Rust (and learn game stuff also). I rewrote everything in C so I decided to open sourced it instead.`
 
 # Boreal Kiss
 
